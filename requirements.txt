@@ -1,5 +1,9 @@
 swolfpy_inputdata
-
-
+xlrd
+pandas
+jupyter
+pytest
+pytest-flakes
+pytest-cov
 
 
