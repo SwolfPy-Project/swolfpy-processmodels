@@ -7,6 +7,7 @@ Life_cycle process models for the swolfpy
 
 __all__ = [
     'ProcessModel',
+    'Distance',
     'LF',
     'WTE',
     'Comp',
@@ -16,10 +17,11 @@ __all__ = [
     'SF_Col'
 ]
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 
 from .ProcessModel import ProcessModel
+from .Distance import Distance
 from .LF import LF
 from .WTE import WTE
 from .Comp import Comp
