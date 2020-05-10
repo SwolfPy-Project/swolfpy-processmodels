@@ -35,6 +35,17 @@ class SF_Col(ProcessModel):
         self.col= self.InputData.col
 
         self.col_schm = Collection_scheme
+
+    @staticmethod
+    def scheme():
+        """
+        Retrun the dictionary for collection_scheme as a sample. all the contributions are zero; user should define according to his/her case. 
+        """
+        scheme = {'RWC':{'Contribution':0,'separate_col':{'SSR':0,'DSR':0,'MSR':0,'MSRDO':0,'SSYW':0,'SSYWDO':0}},
+                  'SSO_DryRes':{'Contribution':0,'separate_col':{'SSR':0,'DSR':0,'MSR':0,'MSRDO':0,'SSYW':0,'SSYWDO':0}},
+                  'REC_WetRes':{'Contribution':0,'separate_col':{'SSR':0,'DSR':0,'MSR':0,'MSRDO':0,'SSYW':0,'SSYWDO':0}},
+                  'MRDO':{'Contribution':0,'separate_col':{'SSR':0,'DSR':0,'MSR':0,'MSRDO':0,'SSYW':0,'SSYWDO':0}}}          
+        return(scheme)
     
     def calc_composition(self):
         #Single Family Residential Waste Generation Rate (kg/household-week)

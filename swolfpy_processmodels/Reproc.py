@@ -25,12 +25,12 @@ class Reproc(ProcessModel):
             self.Biosphere[act] = {}
             self.Technosphere[act] = {}
             self.Waste[act] = {}
-            if act in self.InputData.Input_list.keys():
-                for exchange in self.InputData.Input_list[act].keys():
+            if act in self.InputData.Input_dict.keys():
+                for exchange in self.InputData.Input_dict[act].keys():
                     if exchange[0] == 'Technosphere':
-                        self.Technosphere[act][exchange]=self.InputData.Input_list[act][exchange]['amount']
+                        self.Technosphere[act][exchange]=self.InputData.Input_dict[act][exchange]['amount']
                     elif exchange[0] == 'biosphere3':
-                        self.Biosphere[act][exchange]=self.InputData.Input_list[act][exchange]['amount']
+                        self.Biosphere[act][exchange]=self.InputData.Input_dict[act][exchange]['amount']
                         
         #self.LCI = self.Reprocessing.read_output_from_SWOLF('ReProc',Path(__file__).parent.parent/"Data/Material_Reprocessing_BW2.csv")
     
