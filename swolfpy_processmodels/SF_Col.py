@@ -12,7 +12,7 @@ from pathlib import Path
 
 class SF_Col(ProcessModel):
     Process_Type = 'Collection'
-    def __init__(self,name,Collection_scheme,Treatment_processes=None,Distance=None,Waste_gen_comp=None,sector_population=None,CommonDataObjct=None,input_data_path=None):
+    def __init__(self,name,Collection_scheme,Treatment_processes=None,Distance=None,CommonDataObjct=None,input_data_path=None):
         ### Importing the CommonData and Input data for SF_collection
         super().__init__(CommonDataObjct)
     
