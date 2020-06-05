@@ -147,7 +147,7 @@ class SF_Col(ProcessModel):
                 destination[P] = self.Distance.Distance[(self.name,P)]
         return(destination)
     
-    ### calculating LCI and cost for different locations
+### calculating LCI and cost for different locations
     def calc_destin(self):
         if self.Treat_proc:
             self.dest = {}
@@ -168,12 +168,12 @@ class SF_Col(ProcessModel):
                 for j in self.dest.keys():
                     if len(self.dest[j]) > i:
                         self.result_destination[j][list(self.dest[j].keys())[i]] ={}
-                        if self.output['FuelMg'][j] + self.output['FuelMg_dov'][j] !=0:
-                            self.result_destination[j][list(self.dest[j].keys())[i]][('Technosphere', 'Equipment_Diesel')]=self.output['FuelMg'][j] + self.output['FuelMg_dov'][j]
-                        if self.output['FuelMg_CNG'][j]!=0:
-                            self.result_destination[j][list(self.dest[j].keys())[i]][('Technosphere', 'Equipment_CNG')]=self.output['FuelMg_CNG'][j]
-                        if self.output['ElecMg'][j]!=0:
-                            self.result_destination[j][list(self.dest[j].keys())[i]][('Technosphere', 'Electricity_consumption')]=self.output['ElecMg'][j]
+                        #if self.output['FuelMg'][j] + self.output['FuelMg_dov'][j] !=0:
+                        self.result_destination[j][list(self.dest[j].keys())[i]][('Technosphere', 'Equipment_Diesel')]=self.output['FuelMg'][j] + self.output['FuelMg_dov'][j]
+                        #if self.output['FuelMg_CNG'][j]!=0:
+                        self.result_destination[j][list(self.dest[j].keys())[i]][('Technosphere', 'Equipment_CNG')]=self.output['FuelMg_CNG'][j]
+                        #if self.output['ElecMg'][j]!=0:
+                        self.result_destination[j][list(self.dest[j].keys())[i]][('Technosphere', 'Electricity_consumption')]=self.output['ElecMg'][j]
         else:
             self.calc_lci()
             self.result_destination={}
