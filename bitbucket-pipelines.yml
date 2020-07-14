@@ -9,5 +9,4 @@ pipelines:
     - step:
         script:
           - pip install -r requirements.txt
-          - pip install swolfpy-processmodels
           - py.test
