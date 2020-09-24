@@ -56,7 +56,7 @@ setup(
     data_files = files,
     test_suite='tests',
     tests_require=test_requirements,
-    url='https://bitbucket.org/swolfpy/swolfpy-processmodels',
-    version='0.1.2',
+    url='https://bitbucket.org/msm_sardar/swolfpy-processmodels',
+    version='0.1.3',
     zip_safe=False,
 )

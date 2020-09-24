@@ -17,7 +17,7 @@ __all__ = [
     'SF_Col'
 ]
 
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 
 
 from .ProcessModel import ProcessModel
