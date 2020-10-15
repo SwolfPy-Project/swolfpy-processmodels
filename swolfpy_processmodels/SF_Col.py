@@ -4,11 +4,10 @@ Spyder Editor
 
 This is a temporary script file.
 """
-import numpy as np
 import pandas as pd
 from swolfpy_inputdata import SF_Col_Input
-from .ProcessModel import *
-from pathlib import Path
+from .ProcessModel import ProcessModel
+
 
 class SF_Col(ProcessModel):
     Process_Type = 'Collection'
@@ -16,7 +15,7 @@ class SF_Col(ProcessModel):
         ### Importing the CommonData and Input data for SF_collection
         super().__init__(CommonDataObjct)
     
-        self.InputData= SF_Col_Input(input_data_path)
+        self.InputData= SF_Col_Input(input_data_path, CommonDataObjct=CommonDataObjct)
         self.name = name
         
         if Treatment_processes:
@@ -111,15 +110,12 @@ class SF_Col(ProcessModel):
          self.mass['LV']*self.col_schm['REC_WetRes']['separate_col']['LV'] - self.mass['SSYW']*self.col_schm['REC_WetRes']['separate_col']['SSYW'] -\
          self.mass['SSYWDO']*self.col_schm['REC_WetRes']['separate_col']['SSYWDO']-self.mass['MSRDO']*self.col_schm['REC_WetRes']['separate_col']['MSRDO']-\
          self.mass['REC'])* self.P_use['WetRes']
-        
- 
-        
-        
+
         #Annual Mass Flows (Mg/yr)
         self.col_massflow=pd.DataFrame(index =self.Index)
         for i in ['RWC','SSR','DSR','MSR','MSRDO','LV','SSYW','SSYWDO','SSO','DryRes','REC','WetRes','MRDO','SSYWDO','MSRDO']:
             self.col_massflow[i]=self.mass[i] * self.InputData.Col['houses_res']['amount'] * 52/1000 * self.col_proc[i]
-        
+
         #Check generated mass = Collected mass
         tol_mass=self.mass.sum(axis=0)
         self.Mass_balance_Error = sum(self.col_massflow.sum())/total_waste_gen
@@ -138,7 +134,6 @@ class SF_Col(ProcessModel):
                 self.col.loc[i,'den_c'] = sum((self.mass[i]+self.mass[j])*2.205/ vol)  # Unit lb/cyd
             else:
                 self.col.loc[i,'den_c'] = 0
-    
 
     def find_destination(self,product,Treatment_processes):
         destination={}
@@ -146,7 +141,7 @@ class SF_Col(ProcessModel):
             if product in Treatment_processes[P]['input_type']:
                 destination[P] = self.Distance.Distance[(self.name,P)]
         return(destination)
-    
+
 ### calculating LCI and cost for different locations
     def calc_destin(self):
         if self.Treat_proc:
@@ -155,10 +150,9 @@ class SF_Col(ProcessModel):
             for i in ['RWC','SSR','DSR','MSR','MSRDO','LV','SSYW','SSYWDO','SSO','DryRes','REC','WetRes','MRDO','SSYWDO','MSRDO']:
                 self.dest[i]= self.find_destination(i,self.Treat_proc)   
                 self.result_destination[i] = {}
-        
+
             # Number of times we need to run the collection
             n_run= max([len(self.dest[i]) for i in self.dest.keys()])
-            
     
             for i in range(n_run):
                 for j in self.dest.keys():
@@ -178,12 +172,11 @@ class SF_Col(ProcessModel):
             self.calc_lci()
             self.result_destination={}
 
-        
     def calc_lci(self):
         #Selected compartment compaction density  (lb/yd3)
         #Override calculated density den_c and use an average assumed in-truck density
         self.col['d_msw']= self.col[['den_asmd','den_c']].apply(lambda x: x[0] if x[0]>0 else x[1],axis=1)
-        
+
         #Between collection stops (miles/hour)
         self.col['Vbet'] = self.col['Dbtw']/( self.col['Tbtw']/60)
         #From collection route to facility (miles/hour)
@@ -193,7 +186,6 @@ class SF_Col(ProcessModel):
         #From facility to garage (miles/hour)
         self.col['Vfg'] = self.col['Dfg']/( self.col['Tfg']/60)
 
-
         for i in ['RWC','SSR','DSR','MSR','LV','SSYW','MRDO','SSYWDO','MSRDO']:
             self.col.loc[i,'option_frac'] = self.col_proc[i]
             self.col.loc[i,'mass'] = sum(self.mass[i])
@@ -201,14 +193,7 @@ class SF_Col(ProcessModel):
         for i,j in [('SSO','DryRes'),('REC','WetRes')]:
             self.col.loc[i,'mass'] = sum(self.mass[i] + self.mass[j])
         # Revising mass of LV collection - as it happens only in LV_serv_pd
-        self.col.loc['LV','mass'] = self.col.loc['LV','mass']*52/self.InputData.Col['LV_serv_pd']['amount']
-            
-
-### COLLECTION COSTS         
-        # Collection use
-
-            
-        
+        self.col.loc['LV','mass'] = self.col.loc['LV','mass']*52/self.InputData.Col['LV_serv_pd']['amount']            
 
 ### Calculations for collection vehicle activities
         #houses per trip (Volume limited) and (mass limited)
@@ -224,17 +209,16 @@ class SF_Col(ProcessModel):
                 self.col.loc[i,'Ht'] = min(self.col.loc[i,'Ht_v'],self.col.loc[i,'Ht_m'])
             else:
                 self.col.loc[i,'Ht'] = self.col.loc[i,'Ht_v']
-        
 
         #time per trip (min/trip) -- collection+travel+unload time
         self.col['Tc'] = self.col['Tbtw']*(self.col['Ht']/self.col['HS']-1)+self.col['TL']*self.col['Ht']/self.col['HS']+2*self.col['Trf']+self.col['S']
 
         #trips per day per vehicle (trip/day-vehicle)
         self.col['RD'] =  (self.col['WV']*60-(self.col['F1_']+self.col['F2_']+self.col['Tfg'])-0.5*(self.col['Trf']+self.col['S']))/self.col['Tc']
-       
+
         #daily weight of refuse collected per vehicle (Mg/vehicle-day)
         self.col['RefD'] = self.col['Ht'] * self.col['mass']/self.col['Fr']/1000 * self.col['RD']
-        
+ 
         #number of collection stops per day (stops/vehicle-day)
         for i in ['RWC','SSR','DSR','MSR','SSYW','SSO','REC','LV']:
             self.col['SD'] = self.col['Ht']*self.col['RD']/self.col['HS']
@@ -243,16 +227,16 @@ class SF_Col(ProcessModel):
         for i in ['MRDO','SSYWDO','MSRDO']:
             #volume of recyclables deposited at drop-off site per week (cy/week-house)
             self.col.loc[i,'Ht'] = sum(self.mass[i])*self.InputData.Col['houses_res']['amount']*self.col_proc[i]/0.4536 /self.col['d_msw'][i]
-            
+
             #collection vehicle trips per week (trips/week)
             self.col.loc[i,'DO_trip_week'] =  self.col['Ht'][i] / (self.col['Vt'][i]*self.col['Ut'][i])
-            
+
             #time per trip (min/trip) -- load+travel+unload time
             self.col.loc[i,'Tc'] = self.col['TL'][i]+2*self.col['Trf'][i]+self.col['S'][i]
-                        
+
             #trips per day per vehicle (trip/day-vehicle)
             self.col.loc[i,'RD'] = (self.col['WV'][i]*60-(self.col['F1_'][i]+self.col['F2_'][i]+self.col['Tfg'][i]+self.col['Tgr'][i])+self.col['Trf'][i])/self.col['Tc'][i]
-            
+
             #daily weight of refuse collected per vehicle (tons/day-vehicle)
             self.col.loc[i,'RefD'] = self.col['Vt'][i]*self.col['Ut'][i]*self.col['d_msw'][i]*0.4536/1000*self.col['RD'][i]
             #number of collection stops per day (stops/vehicle-day) (1 stop per trip)
@@ -261,22 +245,22 @@ class SF_Col(ProcessModel):
 ### Daily collection vehicle activity times        
         #loading time at collection stops (min/day-vehicle) & loading time at drop-off site (min/day-vehicle)
         self.col['LD'] = self.col['SD']*self.col['TL']
-            
+
         #travel time between collection stops (min/day-vehicle)
         self.col['Tb'] = self.col['SD'].apply(lambda x: 0 if (x-1)<1 else x-1)*self.col['Tbtw']
 
         #travel time between route and disposal facility (min/day-vehicle)
         self.col['F_R'] = (2*self.col['RD']+0.5)*self.col['Trf']
-        
+
         #unloading time at disposal facility (min/day-vehicle)
         self.col['UD'] = (self.col['RD']+0.5)*self.col['S']
-       
+
         for i in ['MRDO','SSYWDO','MSRDO']:
             self.col.loc[i,'Tb'] = 0
-            
+
             #travel time between disposal facility and drop-off site (min/day-vehicle)
             self.col.loc[i,'F_R'] = (2*self.col['RD'][i]-1)*self.col['Trf'][i]
-            
+
             #unloading time at disposal facility (min/day-vehicle)
             self.col.loc[i,'UD'] = self.col['RD'][i] *self.col['S'][i]                                                
 
@@ -348,7 +332,6 @@ class SF_Col(ProcessModel):
             else:
                 self.col.loc[i,'FuelD_CNG'] = self.col['CNG_gr'][i] + self.col['CNG_idl'][i] + self.col['CNG_col'][i] + self.col['CNG_rf'][i] + self.col['CNG_ud'][i] + self.col['CNG_fg'][i]
 
-
 ###ENERGY CONSUMPTION
 ###Energy consumption by collection vehicles
         #total coll. vehicle fuel use per Mg of refuse (L/Mg)
@@ -356,7 +339,7 @@ class SF_Col(ProcessModel):
 
         #total coll. vehicle CNG fuel use per Mg of refuse (diesel L equivalent/Mg)
         self.col['FuelMg_CNG'] = self.col[['FuelD_CNG','RefD']].apply(lambda x: 0 if x[1]==0 else x[0] *3.785 /x[1] , axis = 1)
-        
+
 ###Energy consumption by drop-off vehicles
         for i in ['MRDO','SSYWDO','MSRDO']:
             #fuel usage per trip to drop-off site (gallons/trip)

@@ -4,71 +4,70 @@ Created on Mon Jul  1 21:59:44 2019
 
 @author: msardar2
 """
-import numpy as np
 import pandas as pd
-from .ProcessModel import *
+from .ProcessModel import ProcessModel
 from swolfpy_inputdata import Comp_Input
-from .flow import *
-from .Comp_subprocess import *
-from pathlib import Path
+from .flow import flow
+from .Comp_subprocess import ac_comp, shredding, screen, mix, add_water, vacuum, post_screen, curing, compost_use
+from .Comp_subprocess import add_LCI, report_LCI
+
 
 class Comp(ProcessModel):
     Process_Type = 'Treatment'
     def __init__(self,input_data_path=None,CommonDataObjct=None):
         super().__init__(CommonDataObjct)
 
-        self.InputData= Comp_Input(input_data_path)
-        self.Assumed_Comp = pd.Series(self.InputData.Assumed_Comp,index=self.Index)
-        
+        self.InputData = Comp_Input(input_data_path, CommonDataObjct=CommonDataObjct)
+        self.Assumed_Comp = self.InputData.process_data['Assumed_Comp']
+
         self.process_data = self.InputData.process_data
 
-        self.flow_init = flow(self.Material_Properties[4:])
+        self.flow_init = flow(self.Material_Properties)
 
     def calc(self):
-        self.LCI = pd.DataFrame(index = self.Index)
-### Initial mass at tipping floor  
-        self.Input = flow(self.Material_Properties[4:])
+        self.LCI = pd.DataFrame(index=self.Index)
+### Initial mass at tipping floor
+        self.Input = flow(self.Material_Properties)
         self.Input.init_flow(1000)
 
-### Primary Pre_screen        
-        self.S1_unders,self.S1_overs=screen(self.Input,self.process_data['Percent screened out in primary pre-screening (shredded)'][3:].values/100, self.Material_Properties[4:],self.InputData.Screen,self.LCI,self.flow_init)
-        
-### Secondary Pre_screen         
-        self.S2_to_shredding,self.S2_residuls=screen(self.S1_overs,self.process_data['Percent screened out in secondary pre-screening (residual not sent to composting)'][3:].values/100, self.Material_Properties[4:],self.InputData.Screen,self.LCI,self.flow_init)
+### Primary Pre_screen
+        self.S1_unders,self.S1_overs=screen(self.Input,self.process_data['Percent screened out in primary pre-screening (shredded)'].values/100, self.Material_Properties,self.InputData.Screen,self.LCI,self.flow_init)
+
+### Secondary Pre_screen
+        self.S2_to_shredding,self.S2_residuls=screen(self.S1_overs,self.process_data['Percent screened out in secondary pre-screening (residual not sent to composting)'].values/100, self.Material_Properties,self.InputData.Screen,self.LCI,self.flow_init)
 ### Shredding/Grinding of seconday screen's unders
-        self.shred = shredding(self.S2_to_shredding,self.Material_Properties[4:],self.InputData.Shredding,self.LCI,self.flow_init)
+        self.shred = shredding(self.S2_to_shredding,self.Material_Properties,self.InputData.Shredding,self.LCI,self.flow_init)
 
 ### Mixing the shredded and screened materials
-        self.mixed = mix(self.S1_unders,self.shred,self.Material_Properties[4:],self.flow_init)
+        self.mixed = mix(self.S1_unders,self.shred,self.Material_Properties,self.flow_init)
 
 ### Adding Water
         self.mixed.update(self.Assumed_Comp)
         self.water_added = 0 if self.mixed.moist_cont > self.InputData.Degradation_Parameters['initMC']['amount'] else \
                                (self.InputData.Degradation_Parameters['initMC']['amount']* self.mixed.flow - self.mixed.water)/(1-self.InputData.Degradation_Parameters['initMC']['amount'])
         water_flow = self.water_added * self.mixed.data['sol_cont'].values/self.mixed.solid
-        
-    
-        self.substrate_to_ac = add_water(self.mixed,water_flow,self.Material_Properties[4:],self.process_data[3:],self.flow_init)
-    
+
+        self.substrate_to_ac = add_water(self.mixed,water_flow,self.Material_Properties,self.process_data,self.flow_init)
+
 ### Active Composting
-        self.substrate_to_ps=ac_comp(self.substrate_to_ac,self.CommonData,self.process_data[3:],self.InputData,self.InputData.Degradation_Parameters,self.InputData.Biological_Degredation,self.Assumed_Comp,self.Material_Properties[4:],self.LCI,self.flow_init)
-    
+        self.substrate_to_ps=ac_comp(self.substrate_to_ac,self.CommonData,self.process_data,self.InputData,self.InputData.Degradation_Parameters,self.InputData.Biological_Degredation,self.Assumed_Comp,self.Material_Properties,self.LCI,self.flow_init)
+
 ### Post screen
-        self.substrate_to_vac,self.ps_res=post_screen(self.substrate_to_ps,self.process_data['Percent post screened out'][3:].values/100, self.Material_Properties[4:],self.InputData.Screen,self.LCI,self.flow_init)
-    
+        self.substrate_to_vac,self.ps_res=post_screen(self.substrate_to_ps,self.process_data['Percent post screened out'].values/100, self.Material_Properties,self.InputData.Screen,self.LCI,self.flow_init)
+
 ### Vacuum
-        self.substrate_to_cu,self.vac_res=vacuum(self.substrate_to_vac,self.process_data['Percent vacuumed out (vacprop)'][3:].values/100, self.Material_Properties[4:],self.InputData.Vaccum_sys,self.LCI,self.flow_init)
-    
+        self.substrate_to_cu,self.vac_res=vacuum(self.substrate_to_vac,self.process_data['Percent vacuumed out (vacprop)'].values/100, self.Material_Properties,self.InputData.Vaccum_sys,self.LCI,self.flow_init)
+
 ### Curing
-        self.final_comp=curing(self.substrate_to_cu,self.CommonData,self.process_data[3:],self.InputData,self.InputData.Degradation_Parameters,self.InputData.Biological_Degredation,self.Assumed_Comp,self.Material_Properties[4:],self.LCI,self.flow_init)     
-    
+        self.final_comp=curing(self.substrate_to_cu,self.CommonData,self.process_data,self.InputData,self.InputData.Degradation_Parameters,self.InputData.Biological_Degredation,self.Assumed_Comp,self.Material_Properties,self.LCI,self.flow_init)     
+
 ### Calculating the P and K in final compost
 # Assumption: composition of ps_res == composition of vac_res  == composition of mixed , while the composition has changed because of active composting and curing
-        self.final_comp.data['P_cont']= (self.mixed.data['sol_cont'].values-self.ps_res.data['sol_cont'].values- self.vac_res.data['sol_cont'].values) * self.Material_Properties['Phosphorus Content'][4:].values/100
-        self.final_comp.data['K_cont']= (self.mixed.data['sol_cont'].values-self.ps_res.data['sol_cont'].values- self.vac_res.data['sol_cont'].values) * self.Material_Properties['Potassium Content'][4:].values/100
-    
+        self.final_comp.data['P_cont']= (self.mixed.data['sol_cont'].values-self.ps_res.data['sol_cont'].values- self.vac_res.data['sol_cont'].values) * self.Material_Properties['Phosphorus Content'].values/100
+        self.final_comp.data['K_cont']= (self.mixed.data['sol_cont'].values-self.ps_res.data['sol_cont'].values- self.vac_res.data['sol_cont'].values) * self.Material_Properties['Potassium Content'].values/100
+
 ### Compost use
-        compost_use(self.final_comp,self.CommonData,self.process_data[3:],self.Material_Properties[4:],self.InputData.Biological_Degredation,self.InputData.Land_app,self.InputData.Fertilizer_offset,self.InputData,self.LCI)
+        compost_use(self.final_comp,self.CommonData,self.process_data,self.Material_Properties,self.InputData.Biological_Degredation,self.InputData.Land_app,self.InputData.Fertilizer_offset,self.InputData,self.Assumed_Comp,self.LCI)
     
 ### office
         Office_elec = ( self.InputData.Office['Mta']['amount'] * self.InputData.Office['Mea']['amount'] / 1000 ) /self.InputData.Op_Param['Taod']['amount'] 
@@ -80,43 +79,41 @@ class Comp(ProcessModel):
 
 ### Cost Calculation
         self.add_cost()
-        
+
 ### Add economic data
     def add_cost(self):
         add_LCI(('biosphere3','Capital_Cost'),self.InputData.Capital_Cost['Capital_Cost']['amount'],self.LCI)
         add_LCI(('biosphere3','Operational_Cost'),[self.InputData.Operational_Cost[y]['amount'] for y in self.Index],self.LCI)
-        
-        
+
     def setup_MC(self,seed=None):
         self.InputData.setup_MC(seed)
         #self.create_uncertainty_from_inputs()
-    
+
     def MC_calc(self):      
         input_list = self.InputData.gen_MC()
         #self.uncertainty_input_next()
         self.calc()
         return(input_list)
-        
+
     def report(self):
 ### Output
         self.COMP = {}
-        Waste={}
-        Technosphere={}
-        Biosphere={}
-        self.COMP ["process name"] = 'COMP'
-        self.COMP  ["Waste"] = Waste
-        self.COMP  ["Technosphere"] = Technosphere
-        self.COMP  ["Biosphere"] = Biosphere
-        
+        Waste = {}
+        Technosphere = {}
+        Biosphere = {}
+        self.COMP["process name"] = 'COMP'
+        self.COMP["Waste"] = Waste
+        self.COMP["Technosphere"] = Technosphere
+        self.COMP["Biosphere"] = Biosphere
+
         for x in [Waste,Technosphere, Biosphere]:
             for y in self.Index:
                 x[y]={}
-                                                       
-               
+
         for y in self.Index:        
 ### Output Waste Database 
             Waste[y]['Other_Residual'] = self.ps_res.data['mass'][y]/1000+self.vac_res.data['mass'][y]/1000+self.S2_residuls.data['mass'][y]/1000 
-             
+
 ### Output Technospphere Database
             Technosphere[y][('Technosphere', 'Electricity_consumption')] =  report_LCI(('Technosphere', 'Electricity_consumption'),self.LCI,y)
             Technosphere[y][('Technosphere', 'Equipment_Diesel')] =  report_LCI(('Technosphere', 'Equipment_Diesel'),self.LCI,y)
@@ -144,15 +141,3 @@ class Comp(ProcessModel):
             Biosphere[y][('biosphere3','Operational_Cost')]= report_LCI(('biosphere3','Operational_Cost'),self.LCI,y)
         
         return(self.COMP)
-
-
-# =============================================================================
-# from time import time
-# A=Comp()
-# c= time()
-# for i in range(100):
-#     A.calc()
-#     A.report()
-# print(time()-c)
-# =============================================================================
-

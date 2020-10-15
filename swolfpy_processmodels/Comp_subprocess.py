@@ -242,7 +242,7 @@ def curing(input,CommonData,process_data,Comp_input,Degradation_Parameters,Biolo
     return(product)
 
 ### Apply compost to Land
-def compost_use(input,CommonData,process_data,Material_Properties,Biological_Degredation,Land_app,Fertilizer_offsest,Comp_input,LCI):
+def compost_use(input,CommonData,process_data,Material_Properties,Biological_Degredation,Land_app,Fertilizer_offsest,Comp_input,assumed_comp,LCI):
     if Fertilizer_offsest['choice_BU']['amount'] == 1:
         # Carbon in final compost
         C_storage = input.data['C_cont'].values * Biological_Degredation['percCStor']['amount']/100
@@ -293,7 +293,7 @@ def compost_use(input,CommonData,process_data,Material_Properties,Biological_Deg
                     
         if Fertilizer_offsest['peatOff']['amount'] == 1:
             Peat = input.data['mass'].values/Comp_input.Material_Properties['densFC']['amount'] * Comp_input.Material_Properties['densPeat']['amount'] / 1000 \
-                    * Comp_input.Material_Properties['PeatSubFac']['amount'] * input.data['C_cont'].values/sum(input.data['C_cont'].values*Comp_input.Assumed_Comp)
+                    * Comp_input.Material_Properties['PeatSubFac']['amount'] * input.data['C_cont'].values/sum(input.data['C_cont'].values*assumed_comp)
             add_LCI(('Technosphere', 'Peat'), -Peat ,LCI)  
     
     if Fertilizer_offsest['choice_BU']['amount'] == 0:
