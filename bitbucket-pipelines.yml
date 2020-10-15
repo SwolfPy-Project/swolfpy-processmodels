@@ -9,4 +9,5 @@ pipelines:
     - step:
         script:
           - pip install -r requirements.txt
+          - pip install https://bitbucket.org/msm_sardar/swolfpy-inputdata/get/master.zip
           - py.test

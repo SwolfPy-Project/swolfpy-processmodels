@@ -1,4 +1,3 @@
-swolfpy_inputdata
 xlrd
 pandas
 jupyter
