@@ -13,82 +13,107 @@ from .AD_subprocess import AD_screen, AD_Post_screen, AD_mix, AD_curing, AD_comp
 
 class AD(ProcessModel):
     Process_Type = 'Treatment'
-    def __init__(self,input_data_path=None,CommonDataObjct=None):
+    def __init__(self, input_data_path=None, CommonDataObjct=None):
         super().__init__(CommonDataObjct)
 
-        self.InputData= AD_Input(input_data_path=input_data_path, CommonDataObjct=CommonDataObjct)
+        self.InputData = AD_Input(input_data_path=input_data_path, CommonDataObjct=CommonDataObjct)
         self.Assumed_Comp = self.InputData.process_data['Assumed_Comp']
-        
+
         self.process_data = self.InputData.process_data
 
         self.flow_init = flow(self.Material_Properties)
 
     def calc(self):
-        self.LCI = pd.DataFrame(index = self.Index)
+        self.LCI = pd.DataFrame(index=self.Index)
         self.LCI_index = False
-### Initial mass 
+### Initial mass
         self.Input = flow(self.Material_Properties)
         self.Input.init_flow(1000)
-        
-### Primary Pre_screen     
-        self.S1_unders,self.S1_overs=AD_screen(self.Input,self.process_data['Percent screened out in primary pre-screening (not sent to reactor)'].values/100, self.Material_Properties,self.LCI,self.flow_init)
-    
-### Secondary Pre_screen         
-        self.S2_to_curing,self.S2_residuls=AD_screen(self.S1_overs,self.process_data['Percent screened out in secondary pre-screening (residual not sent to composting)'].values/100, self.Material_Properties,self.LCI,self.flow_init)
+
+### Primary Pre_screen
+        self.S1_unders, self.S1_overs = AD_screen(self.Input,
+                                                  self.process_data['Percent screened out in primary pre-screening (not sent to reactor)'].values / 100,
+                                                  self.Material_Properties,
+                                                  self.LCI,
+                                                  self.flow_init)
+
+### Secondary Pre_screen
+        self.S2_to_curing, self.S2_residuls = AD_screen(self.S1_overs,
+                                                        self.process_data['Percent screened out in secondary pre-screening (residual not sent to composting)'].values / 100,
+                                                        self.Material_Properties,
+                                                        self.LCI,
+                                                        self.flow_init)
         # Dsl use for grinding
-        add_LCI(('Technosphere', 'Equipment_Diesel'), self.S2_to_curing.data['mass'].values/1000 *self.InputData.shredding['Mtgp']['amount']*self.InputData.shredding['Mtgf']['amount'] ,self.LCI) 
-        
-        add_LCI('Residual', self.S2_residuls.data['mass'].values/1000 ,self.LCI) 
-        
-        
-### Adding Water   
-        water_flow = (self.S1_unders.data['mass'].values*self.InputData.Material_Properties['ad_mcReactor']['amount'] - self.S1_unders.data['moist_cont'].values)\
-                        /(1-self.InputData.Material_Properties['ad_mcReactor']['amount'])
-        self.to_reactor = add_water_AD(self.S1_unders,water_flow,self.Material_Properties,self.flow_init)
+        add_LCI(('Technosphere', 'Equipment_Diesel'),
+                self.S2_to_curing.data['mass'].values / 1000 * self.InputData.shredding['Mtgp']['amount'] * self.InputData.shredding['Mtgf']['amount'],
+                self.LCI)
 
-### Reactor                 
-        self.digestate = Reactor(self.to_reactor,self.CommonData,self.process_data,self.InputData,self.Material_Properties,self.InputData.emission_Engine,self.InputData.emission_Flare,self.LCI,self.flow_init)
+        add_LCI('Residual', self.S2_residuls.data['mass'].values / 1000, self.LCI)
 
-### Dewatering    
-        self.Dig_to_Curing_1,self.liq_rem,self.liq_treatment_vol = Dewater(self.digestate,self.CommonData,self.process_data,self.InputData,self.Material_Properties,water_flow,self.Assumed_Comp.values,self.LCI,self.flow_init)
+### Adding Water
+        water_flow = (self.S1_unders.data['mass'].values * self.InputData.Material_Properties['ad_mcReactor']['amount'] - self.S1_unders.data['moist_cont'].values)\
+                      /(1 - self.InputData.Material_Properties['ad_mcReactor']['amount'])
+        self.to_reactor = add_water_AD(self.S1_unders, water_flow, self.Material_Properties, self.flow_init)
+
+### Reactor
+        self.digestate = Reactor(self.to_reactor, self.CommonData, self.process_data, self.InputData, self.Material_Properties,
+                                 self.InputData.emission_Engine, self.InputData.emission_Flare, self.LCI, self.flow_init)
+
+### Dewatering
+        self.Dig_to_Curing_1, self.liq_rem, self.liq_treatment_vol = Dewater(self.digestate, self.CommonData, self.process_data, self.InputData,
+                                                                             self.Material_Properties, water_flow, self.Assumed_Comp.values,
+                                                                             self.LCI, self.flow_init)
 
 ### Mix Dig_to_Curing_1 and S2_to_curing
-        self.Dig_to_Curing = AD_mix(self.Dig_to_Curing_1,self.S2_to_curing,self.Material_Properties,self.flow_init)
+        self.Dig_to_Curing = AD_mix(self.Dig_to_Curing_1, self.S2_to_curing, self.Material_Properties, self.flow_init)
 
 ### Curing
-        self.compot_to_ps,self.WC_SC = AD_curing(self.Dig_to_Curing,self.to_reactor,self.CommonData,self.process_data,self.InputData,self.Assumed_Comp,self.Material_Properties,self.LCI,self.flow_init)
-    
-### Post_screen
-        self.FinalCompost = AD_Post_screen(self.compot_to_ps,self.WC_SC,self.InputData,self.Assumed_Comp.values,self.Material_Properties,self.LCI,self.flow_init)
-        
-###  POTW       
-        POTW (self.liq_treatment_vol,self.liq_rem,self.to_reactor,self.Dig_to_Curing,self.FinalCompost,self.Index,self.InputData,self.Assumed_Comp.values,self.Material_Properties,self.CommonData,self.LCI)    
+        self.compot_to_ps, self.WC_SC = AD_curing(self.Dig_to_Curing, self.to_reactor, self.CommonData, self.process_data,
+                                                  self.InputData, self.Assumed_Comp, self.Material_Properties, self.LCI,
+                                                  self.flow_init)
 
-### AD Diesel and electricity use (general)    
-        add_LCI(('Technosphere', 'Equipment_Diesel'), self.InputData.Fac_Energy['Dsl_facility']['amount'] ,self.LCI)  
-        add_LCI(('Technosphere', 'Electricity_consumption'), self.InputData.Fac_Energy['elec_facility']['amount'] ,self.LCI)
-        add_LCI(('Technosphere', 'Electricity_consumption'), self.InputData.Fac_Energy['elec_preproc']['amount'] ,self.LCI) 
+### Post_screen
+        self.FinalCompost = AD_Post_screen(self.compot_to_ps, self.WC_SC, self.InputData, self.Assumed_Comp.values,
+                                           self.Material_Properties, self.LCI, self.flow_init)
+
+###  POTW
+        POTW(self.liq_treatment_vol, self.liq_rem, self.to_reactor, self.Dig_to_Curing, self.FinalCompost, self.Index,
+             self.InputData, self.Assumed_Comp.values, self.Material_Properties, self.CommonData, self.LCI)
+
+### AD Diesel and electricity use (general)
+        add_LCI(('Technosphere', 'Equipment_Diesel'), self.InputData.Fac_Energy['Dsl_facility']['amount'], self.LCI)
+        add_LCI(('Technosphere', 'Electricity_consumption'), self.InputData.Fac_Energy['elec_facility']['amount'], self.LCI)
+        add_LCI(('Technosphere', 'Electricity_consumption'), self.InputData.Fac_Energy['elec_preproc']['amount'], self.LCI)
 
 ### Compost use
-        AD_compost_use(self.FinalCompost,self.CommonData,self.process_data,self.Material_Properties,self.Assumed_Comp.values,self.InputData,self.LCI)
+        AD_compost_use(self.FinalCompost, self.CommonData, self.process_data, self.Material_Properties,
+                       self.Assumed_Comp.values, self.InputData, self.LCI)
 
 ### Transportation Compost
-        add_LCI(('Technosphere', 'Internal_Process_Transportation_Medium_Duty_Diesel_Truck'), self.FinalCompost.data['mass'].values * self.InputData.Land_app['distLand']['amount'] ,self.LCI)
-        add_LCI(('Technosphere', 'Empty_Return_Medium_Duty_Diesel_Truck'), self.FinalCompost.data['mass'].values/1000 / self.InputData.Land_app['land_payload']['amount']* self.InputData.Land_app['distLand']['amount'] ,self.LCI)
+        add_LCI(('Technosphere', 'Internal_Process_Transportation_Medium_Duty_Diesel_Truck'),
+                self.FinalCompost.data['mass'].values * self.InputData.Land_app['distLand']['amount'],
+                self.LCI)
+        add_LCI(('Technosphere', 'Empty_Return_Medium_Duty_Diesel_Truck'),
+                self.FinalCompost.data['mass'].values / 1000 / self.InputData.Land_app['land_payload']['amount'] * self.InputData.Land_app['distLand']['amount'],
+                self.LCI)
 
 ### Cost Calculation
         self.add_cost()
 
 ### Add economic data
     def add_cost(self):
-        add_LCI(('biosphere3','Capital_Cost'),self.InputData.Capital_Cost['Capital_Cost']['amount'],self.LCI)
-        add_LCI(('biosphere3','Operational_Cost'),[self.InputData.Operational_Cost[y]['amount'] for y in self.Index],self.LCI)
+        add_LCI(('biosphere3','Capital_Cost'),
+                self.InputData.Capital_Cost['Capital_Cost']['amount'],
+                self.LCI)
+        add_LCI(('biosphere3','Operational_Cost'),
+                [self.InputData.Operational_Cost[y]['amount'] for y in self.Index],
+                self.LCI)
 
-    def setup_MC(self,seed=None):
+    def setup_MC(self, seed=None):
         self.InputData.setup_MC(seed)
         #self.create_uncertainty_from_inputs()
 
-    def MC_calc(self):      
+    def MC_calc(self):
         input_list = self.InputData.gen_MC()
         #self.uncertainty_input_next()
         self.calc()
@@ -113,23 +138,24 @@ class AD(ProcessModel):
                 self.LCI[i] = 0
 
         self.LCI['report_Methane, non-fossil'] =  self.LCI['Methane, non-fossil'].values + self.LCI['Methane, non-fossil (unburned)'].values \
-                                                                                    + self.LCI['Fugitive (Leaked) Methane'].values # Methane, non-fossil ('air',)
+            + self.LCI['Fugitive (Leaked) Methane'].values # Methane, non-fossil ('air',)
 
         self.LCI['report_ CO2 non-fossil'] = self.LCI['CO2-biogenic emissions from digested liquids treatment'].values +  self.LCI['Carbon dioxide, non-fossil _ Curing'].values\
-                                                                                + self.LCI['Carbon dioxide, non-fossil _ Land application'].values + self.LCI['Carbon dioxide, non-fossil (in biogas)'].values \
-                                                                                + self.LCI['Carbon dioxide, non-fossil from comubstion'].values # Carbon dioxide, non-fossil ('air',)
+            + self.LCI['Carbon dioxide, non-fossil _ Land application'].values + self.LCI['Carbon dioxide, non-fossil (in biogas)'].values \
+            + self.LCI['Carbon dioxide, non-fossil from comubstion'].values # Carbon dioxide, non-fossil ('air',)
 
-        self.LCI['report_ NMVOC'] = self.LCI['NMVOC, non-methane volatile organic compounds, unspecified origin'].values + self.LCI['NMVOCs'].values #NMVOC, non-methane volatile organic compounds, unspecified origin ('air',)
+        # NMVOC, non-methane volatile organic compounds, unspecified origin ('air',)
+        self.LCI['report_ NMVOC'] = self.LCI['NMVOC, non-methane volatile organic compounds, unspecified origin'].values + self.LCI['NMVOCs'].values
 
-        bio_rename_dict = { 'Ammonia':('biosphere3', '87883a4e-1e3e-4c9d-90c0-f1bea36f8014'), #Ammonia ('air',)
-                            'Direct Carbon Storage and Humus Formation':('biosphere3', 'e4e9febc-07c1-403d-8d3a-6707bb4d96e6'),# Carbon dioxide, from soil or biomass stock ('air',)
+        bio_rename_dict = { 'Ammonia':('biosphere3', '87883a4e-1e3e-4c9d-90c0-f1bea36f8014'), # Ammonia ('air',)
+                            'Direct Carbon Storage and Humus Formation':('biosphere3', 'e4e9febc-07c1-403d-8d3a-6707bb4d96e6'), # Carbon dioxide, from soil or biomass stock ('air',)
                             'report_ CO2 non-fossil':('biosphere3', 'eba59fd6-f37e-41dc-9ca3-c7ea22d602c7'), # Carbon dioxide, non-fossil ('air',)
                             'Carbon monoxide (CO)':('biosphere3', '2cb2333c-1599-46cf-8435-3dffce627524'), # Carbon monoxide, non-fossil ('air',)
                             'Dinitrogen monoxide':('biosphere3', '20185046-64bb-4c09-a8e7-e8a9e144ca98'), # Dinitrogen monoxide ('air',)
                             'report_Methane, non-fossil':('biosphere3', 'da1157e2-7593-4dfd-80dd-a3449b37a4d8') , # Methane, non-fossil ('air',)
                             'Nitrogen oxides (as NO2)':('biosphere3', 'c1b91234-6f24-417b-8309-46111d09c457'), # Nitrogen oxides ('air',)
-                            'report_ NMVOC':('biosphere3', 'd3260d0e-8203-4cbb-a45a-6a13131a5108'),#NMVOC, non-methane volatile organic compounds, unspecified origin ('air',)
-                            'PM2.5':('biosphere3', '21e46cb8-6233-4c99-bac3-c41d2ab99498'), #Particulates, < 2.5 um ('air',)
+                            'report_ NMVOC':('biosphere3', 'd3260d0e-8203-4cbb-a45a-6a13131a5108'), # NMVOC, non-methane volatile organic compounds, unspecified origin ('air',)
+                            'PM2.5':('biosphere3', '21e46cb8-6233-4c99-bac3-c41d2ab99498'), # Particulates, < 2.5 um ('air',)
                             'Sulfur dioxide (SO2)':('biosphere3', 'fd7aa71c-508c-480d-81a6-8052aad92646'), # Sulfur dioxide ('air',)
                             'Arsenic':('biosphere3', '8c8ffaa5-84ed-4668-ba7d-80fd0f47013f'), # Arsenic, ion ('water', 'surface water') 
                             'Barium':('biosphere3', '2c872773-0a29-4831-93b9-d49b116fa7d5'),  # Barium ('water', 'surface water')
@@ -147,28 +173,28 @@ class AD(ProcessModel):
                             'Silver':('biosphere3', 'af9793ba-25a1-4928-a14a-4bcf7d5bd3f7'),  # Silver, ion ('water', 'surface water')
                             'Total suspended solids':('biosphere3', '3844f446-ded5-4727-8421-17a00ef4eba7'), # Suspended solids, unspecified ('water', 'surface water')   
                             'Zinc':('biosphere3', '541b633c-17a3-4047-bce6-0c0e4fdb7c10'), # Zinc, ion ('water', 'surface water')           
-                            'Nitrate (ground water)':('biosphere3', 'b9291c72-4b1d-4275-8068-4c707dc3ce33'), #Nitrate ('water', 'ground-')
-                            'Nitrate (Surface water)':('biosphere3', '7ce56135-2ca5-4fba-ad52-d62a34bfeb35'), #Nitrate ('water', 'surface water')
+                            'Nitrate (ground water)':('biosphere3', 'b9291c72-4b1d-4275-8068-4c707dc3ce33'), # Nitrate ('water', 'ground-')
+                            'Nitrate (Surface water)':('biosphere3', '7ce56135-2ca5-4fba-ad52-d62a34bfeb35'), # Nitrate ('water', 'surface water')
                             'Ammonium, ion (ground water)':('biosphere3', '736f52e8-9703-4076-8909-7ae80a7f8005'), #'Ammonium, ion' (kilogram, None, ('water', 'ground-'))
                             'Ammonium, ion (surface water)':('biosphere3', '13331e67-6006-48c4-bdb4-340c12010036') # 'Ammonium, ion' (kilogram, None, ('water', 'surface water'))  
                             }
 
-        tech_flows=[('Technosphere', 'Electricity_production'),
-                   ('Technosphere', 'Electricity_consumption'),
-                   ('Technosphere', 'Equipment_Diesel'),
-                   ('Technosphere', 'Internal_Process_Transportation_Heavy_Duty_Diesel_Truck'),
-                   ('Technosphere', 'Internal_Process_Transportation_Medium_Duty_Diesel_Truck'),
-                   ('Technosphere', 'Empty_Return_Heavy_Duty_Diesel_Truck'),
-                   ('Technosphere', 'Empty_Return_Medium_Duty_Diesel_Truck'),
-                   ('Technosphere', 'Nitrogen_Fertilizer'),
-                   ('Technosphere', 'Phosphorous_Fertilizer'),
-                   ('Technosphere', 'Potassium_Fertilizer'),
-                   ('Technosphere', 'Peat'),
-                   ('Technosphere', 'compost_to_LF')]
+        tech_flows = [('Technosphere', 'Electricity_production'),
+                      ('Technosphere', 'Electricity_consumption'),
+                      ('Technosphere', 'Equipment_Diesel'),
+                      ('Technosphere', 'Internal_Process_Transportation_Heavy_Duty_Diesel_Truck'),
+                      ('Technosphere', 'Internal_Process_Transportation_Medium_Duty_Diesel_Truck'),
+                      ('Technosphere', 'Empty_Return_Heavy_Duty_Diesel_Truck'),
+                      ('Technosphere', 'Empty_Return_Medium_Duty_Diesel_Truck'),
+                      ('Technosphere', 'Nitrogen_Fertilizer'),
+                      ('Technosphere', 'Phosphorous_Fertilizer'),
+                      ('Technosphere', 'Potassium_Fertilizer'),
+                      ('Technosphere', 'Peat'),
+                      ('Technosphere', 'compost_to_LF')]
 
         self.Waste = {}
         for y in self.Index:
-            self.Waste[y]={}
+            self.Waste[y] = {}
             self.Waste[y]['Other_Residual'] = self.LCI['Residual'][y]
         self.AD["Waste"] = self.Waste
 
@@ -178,10 +204,10 @@ class AD(ProcessModel):
         # report function rename the LCI dataframe, so we use the self.LCI_index to rename LCI only one time 
         # unless the we call the calc function
         if not self.LCI_index:
-            self.LCI=self.LCI.rename(columns=bio_rename_dict)
+            self.LCI = self.LCI.rename(columns=bio_rename_dict)
             self.LCI_index = True
 
-        self.Biosphere = self.LCI[list(bio_rename_dict.values())+[('biosphere3','Capital_Cost'),('biosphere3','Operational_Cost')]].transpose().to_dict()
+        self.Biosphere = self.LCI[list(bio_rename_dict.values()) + [('biosphere3','Capital_Cost'), ('biosphere3','Operational_Cost')]].transpose().to_dict()
         self.AD["Biosphere"] = self.Biosphere
 
         return(self.AD)

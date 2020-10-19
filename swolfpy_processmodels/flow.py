@@ -4,17 +4,17 @@ Created on Mon Aug 19 09:41:44 2019
 
 @author: msardar2
 """
-import numpy as np
 import pandas as pd
 
 
 ### Flow
 class flow:
-    def __init__(self,Material_Properties):
+    def __init__(self, Material_Properties):
         self.prop = Material_Properties 
-        self.data = pd.DataFrame(index=self.prop.index, columns=['mass', 'sol_cont', 'moist_cont', 'vs_cont', 'ash_cont'])
+        self.data = pd.DataFrame(index=self.prop.index,
+                                 columns=['mass', 'sol_cont', 'moist_cont', 'vs_cont', 'ash_cont'])
 ### Update flow        
-    def update(self,assumed_comp): 
+    def update(self, assumed_comp): 
         self.flow = sum(self.data['mass'].values * assumed_comp.values)
         self.water = sum(self.data['moist_cont'].values * assumed_comp.values)
         self.moist_cont = self.water / self.flow
@@ -22,7 +22,7 @@ class flow:
         self.solid = sum(self.data['sol_cont'].values * assumed_comp.values)
 
 ### Create new flow
-    def init_flow(self,massflows):
+    def init_flow(self, massflows):
         self.data['mass'] = massflows
         self.data['sol_cont'] = self.data['mass'].values * (1 - self.prop['Moisture Content'].values / 100)
         self.data['moist_cont'] = self.data['mass'].values * (self.prop['Moisture Content'].values / 100)
