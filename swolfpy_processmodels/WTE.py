@@ -30,11 +30,11 @@ class WTE(ProcessModel):
         #'MJ/kgww'
         self.Energy_Calculations['Energy_Loss_Due_to_Ashes'] = (-1) *  self.process_data['Heat Lost via Ashes - Cp (J/g K)'].values * \
                                                         self.process_data['Temperature Difference (K)'].values /1000 * (self.Material_Properties['Ash Content'].values/100 + \
-                                                        self.Material_Properties['Volatile Solids'].values/100*(1-self.process_data['Combustion Efficiency (% of VS)'].values))\
+                                                        self.Material_Properties['Volatile Solids'].values/100*(1-self.process_data['Combustion Efficiency (% of VS)'].values/100))\
                                                         * (100-self.Material_Properties['Moisture Content'].values) /100
 
         #'MJ/kgww'
-        self.Energy_Calculations['Energy_Produced'] = self.Material_Properties['Lower Heating Value'].values * self.process_data['Combustion Efficiency (% of VS)'].values * \
+        self.Energy_Calculations['Energy_Produced'] = self.Material_Properties['Lower Heating Value'].values * self.process_data['Combustion Efficiency (% of VS)'].values/100 * \
                                                 (100-self.Material_Properties['Moisture Content'].values)/100
 
 
@@ -55,11 +55,11 @@ class WTE(ProcessModel):
         self.Combustion_Emission = pd.DataFrame(index = self.Index)
 
         #'kg/kgww'
-        self.Combustion_Emission['CO2_fossil'] = self.Material_Properties['Fossil Carbon Content'].values / 100 * self.process_data['Combustion Efficiency (% of VS)'].values\
+        self.Combustion_Emission['CO2_fossil'] = self.Material_Properties['Fossil Carbon Content'].values / 100 * self.process_data['Combustion Efficiency (% of VS)'].values/100\
                                             * (1-self.Material_Properties['Moisture Content'].values/100) * (self.CommonData.MW['CO2']['amount'])/self.CommonData.MW['C']['amount']
 
         #'kg/kgww'
-        self.Combustion_Emission['CO2_biogenic'] = self.Material_Properties['Biogenic Carbon Content'].values / 100 * self.process_data['Combustion Efficiency (% of VS)'].values\
+        self.Combustion_Emission['CO2_biogenic'] = self.Material_Properties['Biogenic Carbon Content'].values / 100 * self.process_data['Combustion Efficiency (% of VS)'].values/100\
                                             * (1-self.Material_Properties['Moisture Content'].values/100) * (self.CommonData.MW['CO2']['amount'])/self.CommonData.MW['C']['amount']
 
         ### Stack metal emissions
@@ -113,7 +113,7 @@ class WTE(ProcessModel):
         
         #'kg/kg ww'
         self.Post_Combustion_Solids['Total_Post_Combustion_Solids']= self.Material_Properties['Ash Content'].values/100 + (1-self.Material_Properties['Moisture Content'].values/100)* \
-                                                                self.Material_Properties['Volatile Solids'].values*(1-self.process_data['Combustion Efficiency (% of VS)'].values)
+                                                                self.Material_Properties['Volatile Solids'].values*(1-self.process_data['Combustion Efficiency (% of VS)'].values/100)
 
         #'kg/kg ww'
         self.Post_Combustion_Solids['Bottom_Ash_with_Metals'] = (1-self.InputData.Metals_Recovery['Fly_ash_frac']['amount'])* self.Post_Combustion_Solids['Total_Post_Combustion_Solids'].values
