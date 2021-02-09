@@ -13,10 +13,10 @@ from .AD_subprocess import AD_screen, AD_Post_screen, AD_mix, AD_curing, AD_comp
 
 class AD(ProcessModel):
     Process_Type = 'Treatment'
-    def __init__(self, input_data_path=None, CommonDataObjct=None):
-        super().__init__(CommonDataObjct)
+    def __init__(self, process_name='AD', input_data_path=None, CommonDataObjct=None):
+        super().__init__(process_name, CommonDataObjct)
 
-        self.InputData = AD_Input(input_data_path=input_data_path, CommonDataObjct=CommonDataObjct)
+        self.InputData = AD_Input(input_data_path=input_data_path, process_name=self.process_name, CommonDataObjct=CommonDataObjct)
         self.Assumed_Comp = self.InputData.process_data['Assumed_Comp']
 
         self.process_data = self.InputData.process_data

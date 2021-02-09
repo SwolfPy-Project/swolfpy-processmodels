@@ -13,10 +13,10 @@ from pathlib import Path
 
 class LF(ProcessModel):
     Process_Type = 'Treatment'
-    def __init__(self, input_data_path=None, CommonDataObjct=None):
-        super().__init__(CommonDataObjct)
+    def __init__(self, process_name='LF', input_data_path=None, CommonDataObjct=None):
+        super().__init__(process_name, CommonDataObjct)
 
-        self.InputData= LF_Input(input_data_path, CommonDataObjct=CommonDataObjct)
+        self.InputData= LF_Input(input_data_path, process_name=self.process_name, CommonDataObjct=CommonDataObjct)
 
         self.gas_emission_factor=self.InputData.gas_emission_factor
 

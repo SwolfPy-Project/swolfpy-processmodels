@@ -11,10 +11,10 @@ from .ProcessModel import ProcessModel
 
 class WTE(ProcessModel):
     Process_Type = 'Treatment'
-    def __init__(self,input_data_path=None, CommonDataObjct=None):
-        super().__init__(CommonDataObjct)
+    def __init__(self, process_name='WTE', input_data_path=None, CommonDataObjct=None):
+        super().__init__(process_name, CommonDataObjct)
 
-        self.InputData= WTE_Input(input_data_path, CommonDataObjct=CommonDataObjct)
+        self.InputData= WTE_Input(input_data_path, process_name=self.process_name, CommonDataObjct=CommonDataObjct)
 
         self.process_data=self.InputData.process_data
 

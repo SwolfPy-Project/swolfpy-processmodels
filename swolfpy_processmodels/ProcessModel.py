@@ -9,11 +9,12 @@ import pandas as pd
 from swolfpy_inputdata import CommonData
 
 class ProcessModel(ABC):
-    def __init__(self,CommonDataObjct):
+    def __init__(self, process_name, CommonDataObjct):
         if CommonDataObjct:
             self.CommonData = CommonDataObjct
         else:
             self.CommonData = CommonData()
+        self.process_name = process_name
             
         ### Read Material properties
         self.Material_Properties=self.CommonData.Material_Properties

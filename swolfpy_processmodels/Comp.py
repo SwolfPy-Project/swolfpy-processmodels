@@ -14,10 +14,10 @@ from .Comp_subprocess import add_LCI, report_LCI
 
 class Comp(ProcessModel):
     Process_Type = 'Treatment'
-    def __init__(self,input_data_path=None,CommonDataObjct=None):
-        super().__init__(CommonDataObjct)
+    def __init__(self, process_name='Composting', input_data_path=None, CommonDataObjct=None):
+        super().__init__(process_name, CommonDataObjct)
 
-        self.InputData = Comp_Input(input_data_path, CommonDataObjct=CommonDataObjct)
+        self.InputData = Comp_Input(input_data_path, process_name=self.process_name, CommonDataObjct=CommonDataObjct)
         self.Assumed_Comp = self.InputData.process_data['Assumed_Comp']
 
         self.process_data = self.InputData.process_data

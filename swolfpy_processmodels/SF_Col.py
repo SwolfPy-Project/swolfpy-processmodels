@@ -11,12 +11,12 @@ from .ProcessModel import ProcessModel
 
 class SF_Col(ProcessModel):
     Process_Type = 'Collection'
-    def __init__(self,name,Collection_scheme,Treatment_processes=None,Distance=None,CommonDataObjct=None,input_data_path=None):
+    def __init__(self, process_name, Collection_scheme, Treatment_processes=None, Distance=None, CommonDataObjct=None, input_data_path=None):
         ### Importing the CommonData and Input data for SF_collection
-        super().__init__(CommonDataObjct)
+        super().__init__(process_name, CommonDataObjct)
     
-        self.InputData= SF_Col_Input(input_data_path, CommonDataObjct=CommonDataObjct)
-        self.name = name
+        self.InputData= SF_Col_Input(input_data_path, process_name=self.process_name, CommonDataObjct=CommonDataObjct)
+        self.process_name = process_name
         
         if Treatment_processes:
             self.Treat_proc = Treatment_processes
@@ -139,7 +139,7 @@ class SF_Col(ProcessModel):
         destination={}
         for P in Treatment_processes:
             if product in Treatment_processes[P]['input_type']:
-                destination[P] = self.Distance.Distance[(self.name,P)]
+                destination[P] = self.Distance.Distance[(self.process_name,P)]
         return(destination)
 
 ### calculating LCI and cost for different locations
@@ -405,7 +405,7 @@ class SF_Col(ProcessModel):
         Waste={}
         Technosphere={}
         Biosphere={}
-        self.collection["process name"] = self.name 
+        self.collection["process name"] = self.process_name 
         self.collection["Waste"] = Waste
         self.collection["Technosphere"] = Technosphere
         self.collection["Biosphere"] = Biosphere

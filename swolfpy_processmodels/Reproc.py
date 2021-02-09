@@ -11,10 +11,10 @@ from swolfpy_inputdata import Reproc_Input
 
 class Reproc(ProcessModel):
     Process_Type = 'Reprocessing'
-    def __init__(self,input_data_path=None, CommonDataObjct=None):
-        super().__init__(CommonDataObjct)
+    def __init__(self,process_name='Reproc', input_data_path=None, CommonDataObjct=None):
+        super().__init__(process_name, CommonDataObjct)
         
-        self.InputData= Reproc_Input(input_data_path, CommonDataObjct=CommonDataObjct)
+        self.InputData= Reproc_Input(input_data_path, process_name=self.process_name, CommonDataObjct=CommonDataObjct)
         
     def calc(self):
         self.Biosphere = {}
