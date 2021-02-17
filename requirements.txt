@@ -1,5 +1,6 @@
 xlrd
 pandas
+numpy_financial
 jupyter
 pytest
 pytest-cov

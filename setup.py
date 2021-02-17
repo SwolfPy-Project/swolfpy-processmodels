@@ -11,7 +11,8 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
-"swolfpy_inputdata"
+"swolfpy_inputdata",
+"numpy_financial"
 ]
 
 setup_requirements = [ ]
