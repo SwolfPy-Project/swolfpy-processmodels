@@ -7,6 +7,8 @@ This is a temporary script file.
 import pandas as pd
 from swolfpy_inputdata import SF_Col_Input
 from .ProcessModel import ProcessModel
+import numpy_financial as npf
+import numpy as np
 
 
 class SF_Col(ProcessModel):
@@ -117,7 +119,6 @@ class SF_Col(ProcessModel):
             self.col_massflow[i]=self.mass[i] * self.InputData.Col['houses_res']['amount'] * 52/1000 * self.col_proc[i]
 
         #Check generated mass = Collected mass
-        tol_mass=self.mass.sum(axis=0)
         self.Mass_balance_Error = sum(self.col_massflow.sum())/total_waste_gen
 
         #Volume Composition of each collection process for each sector
@@ -157,7 +158,9 @@ class SF_Col(ProcessModel):
             for i in range(n_run):
                 for j in self.dest.keys():
                     if len(self.dest[j]) > i:
-                        self.col['Drf'][j] =self.dest[j][list(self.dest[j].keys())[i]]
+                        self.col['Drf'][j] =self.dest[j][list(self.dest[j].keys())[i]] #Distance btwn collection route and destination  
+                        self.col['Dfg'][j] =self.dest[j][list(self.dest[j].keys())[i]] #Distance between destination and garage
+                        
                 self.calc_lci()
                 for j in self.dest.keys():
                     if len(self.dest[j]) > i:
@@ -168,6 +171,8 @@ class SF_Col(ProcessModel):
                         self.result_destination[j][list(self.dest[j].keys())[i]][('Technosphere', 'Equipment_CNG')]=self.output['FuelMg_CNG'][j]
                         #if self.output['ElecMg'][j]!=0:
                         self.result_destination[j][list(self.dest[j].keys())[i]][('Technosphere', 'Electricity_consumption')]=self.output['ElecMg'][j]
+                        
+                        self.result_destination[j][list(self.dest[j].keys())[i]][('biosphere3', 'Operational_Cost')]=self.output['C_collection'][j]
         else:
             self.calc_lci()
             self.result_destination={}
@@ -175,16 +180,15 @@ class SF_Col(ProcessModel):
     def calc_lci(self):
         #Selected compartment compaction density  (lb/yd3)
         #Override calculated density den_c and use an average assumed in-truck density
-        self.col['d_msw']= self.col[['den_asmd','den_c']].apply(lambda x: x[0] if x[0]>0 else x[1],axis=1)
-
-        #Between collection stops (miles/hour)
-        self.col['Vbet'] = self.col['Dbtw']/( self.col['Tbtw']/60)
-        #From collection route to facility (miles/hour)
-        self.col['Vrf'] = self.col['Drf']/( self.col['Trf']/60)
-        #From garage to route in the morning  (miles/hour)
-        self.col['Vgr'] = self.col['Dgr']/( self.col['Tgr']/60)
-        #From facility to garage (miles/hour)
-        self.col['Vfg'] = self.col['Dfg']/( self.col['Tfg']/60)
+        self.col['d_msw']= self.col[['den_asmd','den_c']].apply(lambda x: x[0] if x[0]>0 else x[1],axis=1)        
+        #Travel time between service stops, adjusted based on participation                (min/stop)
+        self.col['Tbtw'] = self.col['Dbtw'] / self.col['Vbet'] * 60
+        #Travel time btwn route and disposal fac.       (min/trip)
+        self.col['Trf'] = self.col['Drf'] / self.col['Vrf'] * 60        
+        #Time from grg to 1st collection route     (min/day-vehicle)
+        self.col['Tgr'] = self.col['Dgr'] / self.col['Vgr'] * 60        
+        #Time from disposal fac. to garage    (min/day-vehicle)
+        self.col['Tfg'] = self.col['Dfg'] / self.col['Vfg'] * 60
 
         for i in ['RWC','SSR','DSR','MSR','LV','SSYW','MRDO','SSYWDO','MSRDO']:
             self.col.loc[i,'option_frac'] = self.col_proc[i]
@@ -215,7 +219,11 @@ class SF_Col(ProcessModel):
 
         #trips per day per vehicle (trip/day-vehicle)
         self.col['RD'] =  (self.col['WV']*60-(self.col['F1_']+self.col['F2_']+self.col['Tfg'])-0.5*(self.col['Trf']+self.col['S']))/self.col['Tc']
-
+        if any(self.col['RD']<0):
+            raise Exception("Travelling time is too long that the truck cannot make a loop trip in one day!")
+        
+        
+        
         #daily weight of refuse collected per vehicle (Mg/vehicle-day)
         self.col['RefD'] = self.col['Ht'] * self.col['mass']/self.col['Fr']/1000 * self.col['RD']
  
@@ -363,12 +371,54 @@ class SF_Col(ProcessModel):
             #total mass of refuse collected per year (Mg) 
             self.col.loc[i,'TotalMass'] =sum(self.col_massflow[i])
 
+###COLLECTION COSTS
+        #Breakdown of capital costs
+        #annual capital cost per vehicle ($/vehicle-year)
+        self.col['C_cap_v'] = (1+self.col['e'])* npf.pmt(self.InputData.LCC['Discount_rate']['amount'],
+                                                         self.col['Lt'].values,
+                                                         -self.col['Pt'].values)
+        #number of collection vehicles (vehicles)
+        for i in ['RWC','SSR','DSR','MSR','LV','SSYW','SSO','DryRes','REC','WetRes','MRDO','SSYWDO','MSRDO']:
+            self.col.loc[i,'Nt'] = self.InputData.Col['houses_res']['amount'] * self.col_proc[i] *\
+                                   self.col['Fr'][i]/(self.col['Ht'][i]*self.col['RD'][i]*self.col['CD'][i])
+        #annualized capital cost per bin ($/bin-year)
+        self.col['Cb'] = (1+self.col['e'])* npf.pmt(self.InputData.LCC['Discount_rate']['amount'],
+                                                         self.col['Lb'].values,
+                                                         -self.col['Pb'].values)  
+        #no. of bins per vehicle (bins/vehicle)
+        self.col['Nb'] = self.col['Rb'] * (self.col['Ht']/self.col['Prtcp']) * self.col['RD'] * self.col['CD'] / self.col['Fr']
+        #bin annual cost per vehicle ($/vehicle-year)
+        self.col['C_cap_b'] = self.col['Cb'] * self.col['Nb']
+        
+        #Breakdown of operating costs
+        #labor cost per vehicle ($/vehicle-year)
+        self.col['Cw'] = (1 + self.col['a']) * ((1+self.col['bw'])*
+                                                (self.col['Wa']*self.col['Nw']+self.col['Wd']*1)*
+                                                self.col['WP']*self.col['CD']*365/7)
+        #O&M cost per vehicle ($/vehicle-year)
+        self.col['Cvo'] = self.col['c']
+        #other expenses per vehicle ($/vehicle-year)
+        self.col['Coe'] = self.col['d'] * (self.col['Nw'] + 1)
+        #Annual operating cost ($/vehicle-year)
+        self.col['C_op'] = (1+self.col['e'])*(self.col['Cw']+self.col['Cvo']+self.col['Coe'])
+        
+        #Total annual cost per vehicle -- cap + O&M ($/vehicle-year)
+        self.col['C_vehicle'] = (1+self.col['bv'])*self.col['C_cap_v']+self.col['C_op']
+        
+        #Total annual cost per house, including bins ($/house-year)   -Includes all houses provided service, even if not participating
+        self.col['C_house'] = (self.col['C_vehicle'] / (self.col['Ht']*self.col['RD']*self.col['CD']/self.col['Fr'])) * self.col['Prtcp']\
+                              + self.col['Cb'] * self.col['Rb']
+        self.col['C_house'].replace([np.inf, np.NAN], 0, inplace=True)
+        
+        #Cost per ton of refuse collected - Cap+OM+bins ($/Mg)
+        self.col['C_collection'] = (self.col['C_house'] * 7/365) / (self.mass.sum()/1000)
+
 # =============================================================================
 # =============================================================================
 ###      OUTPUT
 # =============================================================================
 # =============================================================================
-                # Energy use is calculated for SSO and it is same with Dryres
+        # Energy use is calculated for SSO and it is same with Dryres
         self.col.loc['DryRes','FuelMg'] = self.col['FuelMg']['SSO']
         self.col.loc['DryRes','FuelMg_CNG'] = self.col['FuelMg_CNG']['SSO']
         self.col.loc['DryRes','ElecMg'] = self.col['ElecMg']['SSO']
@@ -379,7 +429,7 @@ class SF_Col(ProcessModel):
         self.col.loc['WetRes','ElecMg'] = self.col['ElecMg']['REC']
         
         
-        self.output = self.col[['TotalMass','FuelMg','FuelMg_CNG','ElecMg','FuelMg_dov']]
+        self.output = self.col[['TotalMass','FuelMg','FuelMg_CNG','ElecMg','FuelMg_dov','C_collection']]
         self.output = self.output.fillna(0)
             
 
