@@ -7,6 +7,8 @@ Created on Tue Jan  7 11:12:21 2020
 import pandas as pd
 import numpy as np
 from copy import deepcopy
+import numpy_financial as npf
+
 
 class LCI():
     """
@@ -39,7 +41,7 @@ class LCI():
         return(pd.DataFrame(LCI_normal[:,:len(self.ColDict)].transpose(),index=list(self.ColDict.keys()),columns=self.Index))
 
 ### Resource use calculation for equipments
-def calc_resource(total_throughput,remaining,removed,Eq,LCI):
+def calc_resource(total_throughput, remaining, removed, Eq, InputData, LCI):
     #Calculating resource use
     #Elec use = (motor_size*Frac_motor)/(max_input*frac_input)  --> unit: kW/Mg
     elec = Eq['motor']['amount'] * Eq['frac_motor']['amount']/ \
@@ -58,10 +60,28 @@ def calc_resource(total_throughput,remaining,removed,Eq,LCI):
     dsl_use = sum(total_throughput) * Eq['diesel_use']['amount'] * Aloc
     LPG_use = sum(total_throughput) * Eq['LPG_use']['amount'] * Aloc
     
+    Cap = Eq['Investment_cost']['amount'] + Eq['Installation_cost']['amount']
+    Rate = InputData.Constr_cost['Inerest_rate']['amount']
+    Lftime = Eq['LifeTime']['amount']
+    TotalHour = InputData.Labor['Hr_shift']['amount'] * InputData.Labor['Shift_day']['amount'] * InputData.Labor['Day_year']['amount']
+    # Average Cost of Ownership ($/Mg)
+    AveCostOwner = (npf.pmt(Rate, Lftime, -Cap) + Eq['O&M']['amount']) / (TotalHour * Eq['Max_input']['amount']*Eq['frac_MaxInput']['amount'])
+
+    #Laborers Required (Sorter*hours/Mg)
+    LaborReq = Eq['N_Labor']['amount'] / (Eq['Max_input']['amount'] * Eq['frac_MaxInput']['amount'])
+    #Drivers Required (Driver*hours/Mg)
+    DriverReq = Eq['N_Driver']['amount'] / (Eq['Max_input']['amount'] * Eq['frac_MaxInput']['amount'])
+    #Labor (sorter+Driver) Cost ($/Mg input)
+    LaborCost = (LaborReq * InputData.Labor['Labor_rate']['amount'] + DriverReq * InputData.Labor['Driver_rate']['amount'] ) *\
+                (1 + InputData.Labor['Fringe_rate']['amount']) * (1 + InputData.Labor['Management_rate']['amount'])
+
+    TotalOMcost = sum(total_throughput) * Aloc * (AveCostOwner + LaborCost)
+
     # adding the resource use
-    LCI.add(('Technosphere', 'Electricity_consumption'),elec_use)
-    LCI.add(('Technosphere', 'Equipment_Diesel'),dsl_use)
-    LCI.add(('Technosphere', 'Equipment_LPG'),LPG_use)
+    LCI.add(('Technosphere', 'Electricity_consumption'), elec_use)
+    LCI.add(('Technosphere', 'Equipment_Diesel'), dsl_use)
+    LCI.add(('Technosphere', 'Equipment_LPG'), LPG_use)
+    LCI.add(('biosphere3', 'Operational_Cost'), TotalOMcost)
 
 ### Drum Feeder
 def Drum_Feeder(Input,InputData,LCI):
@@ -72,7 +92,7 @@ def Drum_Feeder(Input,InputData,LCI):
     Eq=InputData.Eq_DFeeder
     
     #Resource use calculation
-    calc_resource(Input,Input,Input,Eq,LCI) # For Drum Feeder removed,remaining and throughput are same.
+    calc_resource(Input,Input,Input,Eq, InputData, LCI) # For Drum Feeder removed,remaining and throughput are same.
     
     return(feed)
 
@@ -87,12 +107,20 @@ def Man_Sort1(Input,sep_eff,InputData,LCI):
     Eq=InputData.Eq_MS1
     
     #Resource use calculation
-    calc_resource(Input,remained,removed,Eq,LCI)
+    calc_resource(Input,remained,removed,Eq,InputData,LCI)
     
     return(remained,removed)
 
 ### Vacuum 
 def Vacuum(Input,sep_eff,InputData,LCI):
+    #Equipment input
+    if InputData.Rec_material['Film']['amount']==1: # Automatic recovery
+        Eq=InputData.Eq_Vac
+        sep_eff = sep_eff[:,0]
+    elif InputData.Rec_material['Film']['amount']==2: # Manual recovery
+        Eq=InputData.Eq_Vac_Manual
+        sep_eff = sep_eff[:,1]
+
     #Mass Calculation
     if InputData.Rec_material['Film']['amount']>0:
         removed =Input * sep_eff
@@ -100,42 +128,46 @@ def Vacuum(Input,sep_eff,InputData,LCI):
         removed = np.zeros(60)
     remained =Input - removed
     
-    #Equipment input
-    if InputData.Rec_material['Film']['amount']==1: # Automatic recovery
-        Eq=InputData.Eq_Vac
-    elif InputData.Rec_material['Film']['amount']==2: # Manual recovery
-        Eq=InputData.Eq_Vac_Manual
-    
     #Resource use calculation
     if InputData.Rec_material['Film']['amount']>0:
-        calc_resource(Input,remained,removed,Eq,LCI)
+        calc_resource(Input,remained,removed,Eq,InputData,LCI)
     
     return(remained,removed)
 
 
 ### Disc Screen 1: OCC separation
 def DS1(Input,sep_eff,InputData,LCI):
+    #Equipment input
+    if InputData.Rec_material['OCC']['amount']==1: # Automatic recovery
+        Eq=InputData.Eq_DS1
+        sep_eff = sep_eff[:,0]
+    elif InputData.Rec_material['OCC']['amount']==2: # Manual recovery
+        Eq=InputData.Eq_DS1_Manual
+        sep_eff = sep_eff[:,1]
+    
     #Mass Calculation
     if InputData.Rec_material['OCC']['amount']>0:
         removed =Input * sep_eff
     else:
         removed = np.zeros(60)
     remained =Input - removed
-    
-    #Equipment input
-    if InputData.Rec_material['OCC']['amount']==1: # Automatic recovery
-        Eq=InputData.Eq_DS1
-    elif InputData.Rec_material['OCC']['amount']==2: # Manual recovery
-        Eq=InputData.Eq_DS1_Manual
-    
+
     #Resource use calculation
     if InputData.Rec_material['OCC']['amount']>0:
-        calc_resource(Input,remained,removed,Eq,LCI)
+        calc_resource(Input,remained,removed,Eq,InputData,LCI)
     
     return(remained,removed)
 
 ### ### Disc Screen 2: Newspaper separation
 def DS2(Input,sep_eff,InputData,LCI):
+    #Equipment input
+    if InputData.Rec_material['Non_OCC_Fiber']['amount']==1: # Automatic recovery
+        Eq=InputData.Eq_DS2
+        sep_eff = sep_eff[:,0]
+    elif InputData.Rec_material['Non_OCC_Fiber']['amount']==2: # Manual recovery
+        Eq=InputData.Eq_DS2_Manual
+        sep_eff = sep_eff[:,1]
+        
     #Mass Calculation
     if InputData.Rec_material['Non_OCC_Fiber']['amount']>0:
         removed =Input * sep_eff
@@ -143,15 +175,9 @@ def DS2(Input,sep_eff,InputData,LCI):
         removed = np.zeros(60)
     remained =Input - removed
     
-    #Equipment input
-    if InputData.Rec_material['Non_OCC_Fiber']['amount']==1: # Automatic recovery
-        Eq=InputData.Eq_DS2
-    elif InputData.Rec_material['Non_OCC_Fiber']['amount']==2: # Manual recovery
-        Eq=InputData.Eq_DS2_Manual
-    
     #Resource use calculation
     if InputData.Rec_material['Non_OCC_Fiber']['amount']>0:
-        calc_resource(Input,remained,removed,Eq,LCI)
+        calc_resource(Input,remained,removed,Eq,InputData,LCI)
     
     return(remained,removed)
 
@@ -159,6 +185,14 @@ def DS2(Input,sep_eff,InputData,LCI):
 
 ### Disc Screen 3: Fiber separation
 def DS3(Input,sep_eff,InputData,LCI):
+    #Equipment input
+    if InputData.Rec_material['Non_OCC_Fiber']['amount']==1: # Automatic recovery
+        Eq=InputData.Eq_DS3
+        sep_eff = sep_eff[:,0]
+    elif InputData.Rec_material['Non_OCC_Fiber']['amount']==2: # Manual recovery
+        Eq=InputData.Eq_DS3_Manual
+        sep_eff = sep_eff[:,1]
+        
     #Mass Calculation
     if InputData.Rec_material['Non_OCC_Fiber']['amount']>0:
         removed =Input * sep_eff
@@ -166,15 +200,9 @@ def DS3(Input,sep_eff,InputData,LCI):
         removed = np.zeros(60)
     remained =Input - removed
     
-    #Equipment input
-    if InputData.Rec_material['Non_OCC_Fiber']['amount']==1: # Automatic recovery
-        Eq=InputData.Eq_DS3
-    elif InputData.Rec_material['Non_OCC_Fiber']['amount']==2: # Manual recovery
-        Eq=InputData.Eq_DS3_Manual
-    
     #Resource use calculation
     if InputData.Rec_material['Non_OCC_Fiber']['amount']>0:
-        calc_resource(Input,remained,removed,Eq,LCI)
+        calc_resource(Input,remained,removed,Eq,InputData,LCI)
     
     return(remained,removed)
 
@@ -192,7 +220,7 @@ def MS2_DS2(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['Non_OCC_Fiber']['amount']>0: # Manual recovery
         Eq=InputData.Eq_MS2_DS2
         #Resource use calculation
-        calc_resource(Input,remained,removed,Eq,LCI)
+        calc_resource(Input,remained,removed,Eq,InputData,LCI)
     
     return(remained,removed)
 
@@ -211,7 +239,7 @@ def MS2_DS3(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['Non_OCC_Fiber']['amount']>0: # Manual recovery
         Eq=InputData.Eq_MS2_DS3
         #Resource use calculation
-        calc_resource(Input,remained,removed,Eq,LCI)
+        calc_resource(Input,remained,removed,Eq,InputData,LCI)
     return(remained,removed)
 
 ### ### Baler_1Way: product is baled OCC and mixed fiber
@@ -222,7 +250,7 @@ def Baler_1Way(OCC,Non_OCC_Fiber,InputData,LCI):
     #Equipment input
     Eq=InputData.Eq_Baler_1Way
     #Resource use calculation
-    calc_resource(baled,baled,baled,Eq,LCI)
+    calc_resource(baled,baled,baled,Eq,InputData,LCI)
     
     #Wire use calculation
     #Bale volume
@@ -257,7 +285,7 @@ def GBS(Input,sep_eff,InputData,LCI):  # GBS is always in system and working
     #Equipment input
     Eq=InputData.Eq_GBS
     #Resource use calculation
-    calc_resource(Input,remained,removed,Eq,LCI)
+    calc_resource(Input,remained,removed,Eq,InputData,LCI)
 
     return(remained,removed)
 
@@ -274,7 +302,7 @@ def AK(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['Glass']['amount']>0: # Manual recovery
         Eq=InputData.Eq_AK
         #Resource use calculation
-        calc_resource(Input,remained,removed,Eq,LCI)
+        calc_resource(Input,remained,removed,Eq,InputData,LCI)
     
     return(remained,removed)
 
@@ -291,7 +319,7 @@ def OG(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['Glass']['amount']>0: # Manual recovery
         Eq=InputData.Eq_OG
         #Resource use calculation
-        calc_resource(Input,remained,removed,Eq,LCI)
+        calc_resource(Input,remained,removed,Eq,InputData,LCI)
     
     return(remained,removed)
 
@@ -308,7 +336,7 @@ def MS3_G(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['Glass']['amount']>0: # Manual recovery
         Eq=InputData.Eq_MS3_G
         #Resource use calculation
-        calc_resource(Input,remained,removed,Eq,LCI)
+        calc_resource(Input,remained,removed,Eq,InputData,LCI)
     
     return(remained,removed)
 
@@ -340,22 +368,25 @@ def Glass_type(Input,InputData):
     
 ### Optical PET
 def OPET(Input,sep_eff,InputData,LCI):
+    #Equipment input
+    if InputData.Rec_material['PET']['amount']==1: # Automatic recovery
+        Eq=InputData.Eq_OPET
+        sep_eff = sep_eff[:,0]
+    elif InputData.Rec_material['PET']['amount']==2: # Manual recovery
+        Eq=InputData.Eq_OSPET
+        sep_eff = sep_eff[:,1]
+
     #Mass Calculation
     if InputData.Rec_material['PET']['amount']>0:
         removed =Input * sep_eff
     else:
         removed = np.zeros(60)
     remained =Input - removed
-    
-    #Equipment input
-    if InputData.Rec_material['PET']['amount']==1: # Automatic recovery
-        Eq=InputData.Eq_OPET
-    elif InputData.Rec_material['PET']['amount']==2: # Manual recovery
-        Eq=InputData.Eq_OSPET
+
     
     #Resource use calculation
     if InputData.Rec_material['PET']['amount']>0:
-        calc_resource(Input,remained,removed,Eq,LCI)
+        calc_resource(Input,remained,removed,Eq,InputData,LCI)
     
     return(remained,removed)
     
@@ -372,28 +403,30 @@ def MS4_PET(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['PET']['amount']>0: # Manual recovery
         Eq=InputData.Eq_MS4_PET
         #Resource use calculation
-        calc_resource(Input,remained,removed,Eq,LCI)
+        calc_resource(Input,remained,removed,Eq,InputData,LCI)
     
     return(remained,removed)
 
 ### Optical HDPE
 def OHDPE(Input,sep_eff,InputData,LCI):
+    #Equipment input
+    if InputData.Rec_material['HDPE']['amount']==1: # Automatic recovery
+        Eq=InputData.Eq_OHDPE
+        sep_eff = sep_eff[:,0]
+    elif InputData.Rec_material['HDPE']['amount']==2: # Manual recovery
+        Eq=InputData.Eq_OSHDPE
+        sep_eff = sep_eff[:,1]
+
     #Mass Calculation
     if InputData.Rec_material['HDPE']['amount']>0:
         removed =Input * sep_eff
     else:
         removed = np.zeros(60)
-    remained =Input - removed
-    
-    #Equipment input
-    if InputData.Rec_material['HDPE']['amount']==1: # Automatic recovery
-        Eq=InputData.Eq_OHDPE
-    elif InputData.Rec_material['HDPE']['amount']==2: # Manual recovery
-        Eq=InputData.Eq_OSHDPE
+    remained =Input - removed    
     
     #Resource use calculation
     if InputData.Rec_material['HDPE']['amount']>0:
-        calc_resource(Input,remained,removed,Eq,LCI)
+        calc_resource(Input,remained,removed,Eq,InputData,LCI)
     
     return(remained,removed)
     
@@ -410,7 +443,7 @@ def MS4_HDPE(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['HDPE']['amount']>0: # Manual recovery
         Eq=InputData.Eq_MS4_HDPE
         #Resource use calculation
-        calc_resource(Input,remained,removed,Eq,LCI)
+        calc_resource(Input,remained,removed,Eq,InputData,LCI)
     
     return(remained,removed)
 
@@ -433,6 +466,14 @@ def HDPE_type(Input,InputData):
  
 ### Magnet
 def Magnet(Input,sep_eff,InputData,LCI):
+    #Equipment input
+    if InputData.Rec_material['Ferrous']['amount']==1: # Automatic recovery
+        Eq=InputData.Eq_Magnet
+        sep_eff = sep_eff[:,0]
+    elif InputData.Rec_material['Ferrous']['amount']==2: # Manual recovery
+        Eq=InputData.Eq_Magnet_Manual
+        sep_eff = sep_eff[:,1]
+
     #Mass Calculation
     if InputData.Rec_material['Ferrous']['amount']>0:
         removed =Input * sep_eff
@@ -440,15 +481,10 @@ def Magnet(Input,sep_eff,InputData,LCI):
         removed = np.zeros(60)
     remained =Input - removed
     
-    #Equipment input
-    if InputData.Rec_material['Ferrous']['amount']==1: # Automatic recovery
-        Eq=InputData.Eq_Magnet
-    elif InputData.Rec_material['Ferrous']['amount']==2: # Manual recovery
-        Eq=InputData.Eq_Magnet_Manual
     
     #Resource use calculation
     if InputData.Rec_material['Ferrous']['amount']>0:
-        calc_resource(Input,remained,removed,Eq,LCI)
+        calc_resource(Input,remained,removed,Eq,InputData,LCI)
     
     return(remained,removed)
     
@@ -465,12 +501,20 @@ def MS4_Fe(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['Ferrous']['amount']>0: # Manual recovery
         Eq=InputData.Eq_MS4_Fe 
         #Resource use calculation
-        calc_resource(Input,remained,removed,Eq,LCI)
+        calc_resource(Input,remained,removed,Eq,InputData,LCI)
     
     return(remained,removed)
     
 ### Eddy Current Separator
 def EDS(Input,sep_eff,InputData,LCI):
+    #Equipment input
+    if InputData.Rec_material['Aluminous']['amount']==1: # Automatic recovery
+        Eq=InputData.Eq_EDS
+        sep_eff = sep_eff[:,0]
+    elif InputData.Rec_material['Aluminous']['amount']==2: # Manual recovery
+        Eq=InputData.Eq_EDS_Manual
+        sep_eff = sep_eff[:,1]
+    
     #Mass Calculation
     if InputData.Rec_material['Aluminous']['amount']>0:
         removed =Input * sep_eff
@@ -478,15 +522,9 @@ def EDS(Input,sep_eff,InputData,LCI):
         removed = np.zeros(60)
     remained =Input - removed
     
-    #Equipment input
-    if InputData.Rec_material['Aluminous']['amount']==1: # Automatic recovery
-        Eq=InputData.Eq_EDS
-    elif InputData.Rec_material['Aluminous']['amount']==2: # Manual recovery
-        Eq=InputData.Eq_EDS_Manual
-    
     #Resource use calculation
     if InputData.Rec_material['Aluminous']['amount']>0:
-        calc_resource(Input,remained,removed,Eq,LCI)
+        calc_resource(Input,remained,removed,Eq,InputData,LCI)
     
     return(remained,removed)
     
@@ -503,7 +541,7 @@ def MS4_Al(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['Aluminous']['amount']>0: # Manual recovery
         Eq=InputData.Eq_MS4_Al 
         #Resource use calculation
-        calc_resource(Input,remained,removed,Eq,LCI)
+        calc_resource(Input,remained,removed,Eq,InputData,LCI)
     
     return(remained,removed)
 
@@ -516,7 +554,7 @@ def MS5(Input,sep_eff,InputData,LCI):
     #Equipment input
     Eq=InputData.Eq_MS5 
     #Resource use calculation
-    calc_resource(Input,remained,removed,Eq,LCI)
+    calc_resource(Input,remained,removed,Eq,InputData,LCI)
     
     return(remained,removed)
     
@@ -528,7 +566,7 @@ def Baler_2Way(Input,InputData,LCI):
     #Equipment input
     Eq=InputData.Eq_Baler_2Way
     #Resource use calculation
-    calc_resource(baled,baled,baled,Eq,LCI)
+    calc_resource(baled,baled,baled,Eq,InputData,LCI)
     
     #Density
     Density = np.ones(60)*10**12 #using big density for non-recycab
@@ -566,7 +604,7 @@ def Rolling_Stock(Input,InputData,LCI):
     #Equipment input
     Eq=InputData.Eq_Rolling_Stock
     #Resource use calculation
-    calc_resource(Input,Input,Input,Eq,LCI)
+    calc_resource(Input,Input,Input,Eq,InputData,LCI)
     return(None)    
 
 ### Conveyor
@@ -574,7 +612,7 @@ def Conveyor(Input,InputData,LCI):
     #Equipment input
     Eq=InputData.Eq_Conveyor
     #Resource use calculation
-    calc_resource(Input,Input,Input,Eq,LCI)
+    calc_resource(Input,Input,Input,Eq,InputData,LCI)
     return(None)      
 
 

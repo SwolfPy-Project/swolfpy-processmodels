@@ -41,23 +41,23 @@ class SS_MRF(ProcessModel):
         #self._MS1_rmnd is not residual, it goes to vacuum
 
         ### Vacuum     
-        self._Vac_rmnd,self._Vac_rmvd=Vacuum(self._MS1_rmvd,self.process_data['Vacuum'].values,self.InputData,self.LCI)
+        self._Vac_rmnd,self._Vac_rmvd=Vacuum(self._MS1_rmvd,self.process_data[['Vacuum','Manual-Vacuum']].values,self.InputData,self.LCI)
         self.LCI_Waste.add('Other_Residual',self._Vac_rmnd)
         self.LCI_Waste.add('LDPE_Film',self._Vac_rmvd)
         
         ### Disc Screen 1: OCC separation
-        self._DS1_rmnd,self._DS1_rmvd=DS1(self._MS1_rmnd,self.process_data['Disc Screen 1'].values,self.InputData,self.LCI)
+        self._DS1_rmnd,self._DS1_rmvd=DS1(self._MS1_rmnd,self.process_data[['Disc Screen 1','Manual-DS1']].values,self.InputData,self.LCI)
         self.LCI_Waste.add('OCC',self._DS1_rmvd)
         
         ### Disc Screen 2: Newspaper separation
-        self._DS2_rmnd,self._DS2_rmvd=DS2(self._DS1_rmnd,self.process_data['Disc Screen 2'].values,self.InputData,self.LCI)        
+        self._DS2_rmnd,self._DS2_rmvd=DS2(self._DS1_rmnd,self.process_data[['Disc Screen 2','Manual-DS2']].values,self.InputData,self.LCI)        
 
         ### Manual Sort 2-DS2 (Negative)
         self._MS2_DS2_rmnd,self._MS2_DS2_rmvd=MS2_DS2(self._DS2_rmvd,self.process_data['Manual Sort 2-DS2 (Negative)'].values,self.InputData,self.LCI)
         self.LCI_Waste.add('Other_Residual',self._MS2_DS2_rmvd)
         
         ### Disc Screen 3: Fiber separation
-        self._DS3_rmnd,self._DS3_rmvd=DS3(self._DS2_rmnd,self.process_data['Disc Screen 3'].values,self.InputData,self.LCI)
+        self._DS3_rmnd,self._DS3_rmvd=DS3(self._DS2_rmnd,self.process_data[['Disc Screen 3','Manual-DS3']].values,self.InputData,self.LCI)
         
         ### Manual Sort 2-DS3 (Negative)
         self._MS2_DS3_rmnd,self._MS2_DS3_rmvd=MS2_DS3(self._DS3_rmvd,self.process_data['Manual Sort 2-DS3 (Negative)'].values,self.InputData,self.LCI)   
@@ -97,7 +97,7 @@ class SS_MRF(ProcessModel):
         self.LCI_Waste.add('Mixed_Glass',self._Mixed_Glass)
         
         ### Optical PET
-        self._OPET_rmnd,self._OPET_rmvd = OPET(self._GBS_rmnd,self.process_data['Optical PET'].values,self.InputData,self.LCI)           
+        self._OPET_rmnd,self._OPET_rmvd = OPET(self._GBS_rmnd,self.process_data[['Optical PET','Manual-OSPET']].values,self.InputData,self.LCI)           
 
         ### Manual Sort 4-PET (Negative)
         self._MS4_PET_rmnd,self._MS4_PET_rmvd = MS4_PET(self._OPET_rmvd,self.process_data['Manual Sort 4-PET (Negative)'].values,self.InputData,self.LCI) 
@@ -105,7 +105,7 @@ class SS_MRF(ProcessModel):
         self.LCI_Waste.add('PET',self._MS4_PET_rmnd)
 
         ### Optical HDPE
-        self._OHDPE_rmnd,self._OHDPE_rmvd = OHDPE(self._OPET_rmnd,self.process_data['Optical HDPE'].values,self.InputData,self.LCI)           
+        self._OHDPE_rmnd,self._OHDPE_rmvd = OHDPE(self._OPET_rmnd,self.process_data[['Optical HDPE','Manual-OSHDPE']].values,self.InputData,self.LCI)           
 
         ### Manual Sort 4-HDPE (Negative)
         self._MS4_HDPE_rmnd,self._MS4_HDPE_rmvd = MS4_HDPE(self._OHDPE_rmvd,self.process_data['Manual Sort 4-HDPE (Negative)'].values,self.InputData,self.LCI) 
@@ -118,7 +118,7 @@ class SS_MRF(ProcessModel):
         self.LCI_Waste.add('HDPE_T',self._HDPE_T)
 
         ### Magnet
-        self._Magnet_rmnd, self._Magnet_rmvd = Magnet(self._OHDPE_rmnd,self.process_data['Magnet'].values,self.InputData,self.LCI)           
+        self._Magnet_rmnd, self._Magnet_rmvd = Magnet(self._OHDPE_rmnd,self.process_data[['Magnet','Manual-Magnet']].values,self.InputData,self.LCI)           
 
         ### Manual Sort 4-Fe (Negative)
         self._MS4_Fe_rmnd, self._MS4_Fe_rmvd = MS4_Fe(self._Magnet_rmvd, self.process_data['Manual Sort 4-Fe (Negative)'].values,self.InputData,self.LCI) 
@@ -126,7 +126,7 @@ class SS_MRF(ProcessModel):
         self.LCI_Waste.add('Fe',self._MS4_Fe_rmnd)
 
         ### Eddy Current Separator
-        self._EDS_rmnd,self._EDS_rmvd=EDS(self._Magnet_rmnd,self.process_data['Eddy Current Separator'].values,self.InputData,self.LCI)           
+        self._EDS_rmnd,self._EDS_rmvd=EDS(self._Magnet_rmnd,self.process_data[['Eddy Current Separator','Manual-ECS']].values,self.InputData,self.LCI)           
 
         ### Manual Sort 4-Al (Negative)
         self._MS4_Al_rmnd,self._MS4_Al_rmvd=MS4_Al(self._EDS_rmvd,self.process_data['Manual Sort 4-Al (Negative)'].values,self.InputData,self.LCI) 
@@ -183,15 +183,13 @@ class SS_MRF(ProcessModel):
         self.SS_MRF["Waste"] = self.LCI_Waste.report_T(self._Input).to_dict() 
 
         # Technosphere
-        #self.technosphere = self.LCI.report(self._Input)
-        #self.SS_MRF["Technosphere"] = self.technosphere.transpose().to_dict()
-        self.SS_MRF["Technosphere"] = self.LCI.report_T(self._Input).to_dict()
+        tech_index = [x for x in self.LCI.ColDict.keys() if 'biosphere3' not in x]
+        self.SS_MRF["Technosphere"] = self.LCI.report_T(self._Input).loc[tech_index,:].to_dict()
+        
 
         # Biosphere
-        Biosphere={}
-        for y in self.Index:
-            Biosphere[y]={}
-        self.SS_MRF["Biosphere"] = Biosphere
+        bio_index = [x for x in self.LCI.ColDict.keys() if 'biosphere3' in x]
+        self.SS_MRF["Biosphere"] = self.LCI.report_T(self._Input).loc[bio_index,:].to_dict()
         return(self.SS_MRF)
 
 #%% Monte Carlo         
