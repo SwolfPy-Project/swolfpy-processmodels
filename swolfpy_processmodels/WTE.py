@@ -7,6 +7,7 @@ Created on Thu Jun 13 15:10:31 2019
 import pandas as pd
 from swolfpy_inputdata import WTE_Input
 from .ProcessModel import ProcessModel
+import numpy_financial as npf
 
 
 class WTE(ProcessModel):
@@ -162,7 +163,9 @@ class WTE(ProcessModel):
 ### Add economic data
     def add_cost(self):
         self.Cost=pd.DataFrame(index = self.Index)
-        self.Cost[('biosphere3', 'Capital_Cost')] = self.InputData.Capital_Cost['Capital_Cost']['amount']
+        self.Cost[('biosphere3', 'Capital_Cost')] = -npf.pmt(rate=self.InputData.Economic_parameters['CF_I']['amount'],
+                                                            nper=self.InputData.Economic_parameters['WTE_lifetime']['amount'],
+                                                            pv=self.InputData.Economic_parameters['Unit_WTE_capital_cost']['amount'])
         self.Cost[('biosphere3', 'Operational_Cost')] = [self.InputData.Operational_Cost[y]['amount'] for y in self.Index]
 
     def setup_MC(self, seed=None):

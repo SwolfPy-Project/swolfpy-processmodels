@@ -5,6 +5,7 @@ Created on Tue Jan  7 11:10:12 2020
 @author: msardar2
 """
 import numpy as np
+import numpy_financial as npf
 import pandas as pd
 from swolfpy_inputdata import SS_MRF_Input
 from .SS_MRF_subprocess import LCI
@@ -162,6 +163,12 @@ class SS_MRF(ProcessModel):
 
         ### General Electricity
         Electricity(self._Input,self.InputData,self.LCI)
+        
+        ### Capital Cost
+        capital_cost = -npf.pmt(rate=self.InputData.Constr_cost['Inerest_rate']['amount'],
+                        nper=self.InputData.Constr_cost['lifetime']['amount'],
+                        pv=self.InputData.Constr_cost['Unit_capital_cost']['amount'])
+        self.LCI.add(('biosphere3', 'Capital_Cost'), capital_cost * self._Input)
 
 #%% Check Mass balance        
         ### Check mass balance:

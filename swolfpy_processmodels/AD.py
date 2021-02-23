@@ -9,6 +9,7 @@ from .ProcessModel import ProcessModel
 from swolfpy_inputdata import AD_Input
 from .flow import flow
 from .AD_subprocess import AD_screen, AD_Post_screen, AD_mix, AD_curing, AD_compost_use, add_LCI, add_water_AD, Reactor, Dewater, POTW
+import numpy_financial as npf
 
 
 class AD(ProcessModel):
@@ -102,9 +103,10 @@ class AD(ProcessModel):
 
 ### Add economic data
     def add_cost(self):
-        add_LCI(('biosphere3','Capital_Cost'),
-                self.InputData.Capital_Cost['Capital_Cost']['amount'],
-                self.LCI)
+        capital_cost = -npf.pmt(rate=self.InputData.Economic_parameters['Inerest_rate']['amount'],
+                        nper=self.InputData.Economic_parameters['lifetime']['amount'],
+                        pv=self.InputData.Economic_parameters['Unit_capital_cost']['amount'])
+        add_LCI(('biosphere3','Capital_Cost'), capital_cost, self.LCI)
         add_LCI(('biosphere3','Operational_Cost'),
                 [self.InputData.Operational_Cost[y]['amount'] for y in self.Index],
                 self.LCI)

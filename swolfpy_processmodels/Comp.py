@@ -10,6 +10,7 @@ from swolfpy_inputdata import Comp_Input
 from .flow import flow
 from .Comp_subprocess import ac_comp, shredding, screen, mix, add_water, vacuum, post_screen, curing, compost_use
 from .Comp_subprocess import add_LCI, report_LCI
+import numpy_financial as npf
 
 
 class Comp(ProcessModel):
@@ -82,8 +83,12 @@ class Comp(ProcessModel):
 
 ### Add economic data
     def add_cost(self):
-        add_LCI(('biosphere3','Capital_Cost'),self.InputData.Capital_Cost['Capital_Cost']['amount'],self.LCI)
-        add_LCI(('biosphere3','Operational_Cost'),[self.InputData.Operational_Cost[y]['amount'] for y in self.Index],self.LCI)
+        capital_cost = -npf.pmt(rate=self.InputData.Economic_parameters['Inerest_rate']['amount'],
+                                nper=self.InputData.Economic_parameters['lifetime']['amount'],
+                                pv=self.InputData.Economic_parameters['Unit_capital_cost']['amount'])
+        add_LCI(('biosphere3','Capital_Cost'), capital_cost,self.LCI)
+        
+        add_LCI(('biosphere3','Operational_Cost'), [self.InputData.Operational_Cost[y]['amount'] for y in self.Index], self.LCI)
 
     def setup_MC(self,seed=None):
         self.InputData.setup_MC(seed)
