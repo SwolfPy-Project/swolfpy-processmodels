@@ -635,9 +635,9 @@ def Mixed_paper_separation(Input,InputData):
     if InputData.Rec_Sorted_material['Magazines']['amount']==1:
         Fiber_Other[12] = Input[12]*InputData.Rec_Sep_eff['Magazines']['amount']    
     
-    # Separate 3rd_Class_Mail index is 13
-    if InputData.Rec_Sorted_material['3rd_Class_Mail']['amount']==1:
-        Fiber_Other[13] = Input[13]*InputData.Rec_Sep_eff['3rd_Class_Mail']['amount']
+    # Separate Third_Class_Mail index is 13
+    if InputData.Rec_Sorted_material['Third_Class_Mail']['amount']==1:
+        Fiber_Other[13] = Input[13]*InputData.Rec_Sep_eff['Third_Class_Mail']['amount']
 
     # Separate Folding_Containers index is 14
     if InputData.Rec_Sorted_material['Folding_Containers']['amount']==1:
