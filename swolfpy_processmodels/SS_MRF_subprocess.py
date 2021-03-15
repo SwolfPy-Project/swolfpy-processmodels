@@ -125,7 +125,7 @@ def Vacuum(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['Film']['amount']>0:
         removed =Input * sep_eff
     else:
-        removed = np.zeros(60)
+        removed = np.zeros(len(LCI.Index))
     remained =Input - removed
     
     #Resource use calculation
@@ -149,7 +149,7 @@ def DS1(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['OCC']['amount']>0:
         removed =Input * sep_eff
     else:
-        removed = np.zeros(60)
+        removed = np.zeros(len(LCI.Index))
     remained =Input - removed
 
     #Resource use calculation
@@ -172,7 +172,7 @@ def DS2(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['Non_OCC_Fiber']['amount']>0:
         removed =Input * sep_eff
     else:
-        removed = np.zeros(60)
+        removed = np.zeros(len(LCI.Index))
     remained =Input - removed
     
     #Resource use calculation
@@ -197,7 +197,7 @@ def DS3(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['Non_OCC_Fiber']['amount']>0:
         removed =Input * sep_eff
     else:
-        removed = np.zeros(60)
+        removed = np.zeros(len(LCI.Index))
     remained =Input - removed
     
     #Resource use calculation
@@ -213,7 +213,7 @@ def MS2_DS2(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['Non_OCC_Fiber']['amount']>0:
         removed =Input * sep_eff
     else:
-        removed = np.zeros(60)
+        removed = np.zeros(len(LCI.Index))
     remained =Input - removed
     
     #Equipment input
@@ -232,7 +232,7 @@ def MS2_DS3(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['Non_OCC_Fiber']['amount']>0:
         removed =Input * sep_eff
     else:
-        removed = np.zeros(60)
+        removed = np.zeros(len(LCI.Index))
     remained =Input - removed
     
     #Equipment input
@@ -295,7 +295,7 @@ def AK(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['Glass']['amount']==1:
         removed =Input * sep_eff
     else:
-        removed = np.zeros(60)
+        removed = np.zeros(len(LCI.Index))
     remained =Input - removed
     
     #Equipment input
@@ -312,7 +312,7 @@ def OG(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['Glass']['amount']==1:
         removed =Input * sep_eff
     else:
-        removed = np.zeros(60)
+        removed = np.zeros(len(LCI.Index))
     remained =Input - removed
     
     #Equipment input
@@ -329,7 +329,7 @@ def MS3_G(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['Glass']['amount']==1:
         removed =Input * sep_eff
     else:
-        removed = np.zeros(60)
+        removed = np.zeros(len(LCI.Index))
     remained =Input - removed
     
     #Equipment input
@@ -343,11 +343,11 @@ def MS3_G(Input,sep_eff,InputData,LCI):
 ### Secondary sort glass
 def Glass_type(Input,InputData):
     #Mass Calculation
-    Res_Glass = np.zeros(60)
-    Brown_glass = np.zeros(60)
-    Clear_glass = np.zeros(60)
-    Green_glass = np.zeros(60)
-    Mixed_Glass = np.zeros(60)
+    Res_Glass = np.zeros(Input.shape[0])
+    Brown_glass = np.zeros(Input.shape[0])
+    Clear_glass = np.zeros(Input.shape[0])
+    Green_glass = np.zeros(Input.shape[0])
+    Mixed_Glass = np.zeros(Input.shape[0])
     
     if InputData.Rec_material['Glass']['amount']==0:
         Res_Glass = Input
@@ -380,7 +380,7 @@ def OPET(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['PET']['amount']>0:
         removed =Input * sep_eff
     else:
-        removed = np.zeros(60)
+        removed = np.zeros(len(LCI.Index))
     remained =Input - removed
 
     
@@ -396,7 +396,7 @@ def MS4_PET(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['PET']['amount']>0:
         removed =Input * sep_eff
     else:
-        removed = np.zeros(60)
+        removed = np.zeros(len(LCI.Index))
     remained =Input - removed
     
     #Equipment input
@@ -421,7 +421,7 @@ def OHDPE(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['HDPE']['amount']>0:
         removed =Input * sep_eff
     else:
-        removed = np.zeros(60)
+        removed = np.zeros(len(LCI.Index))
     remained =Input - removed    
     
     #Resource use calculation
@@ -436,7 +436,7 @@ def MS4_HDPE(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['HDPE']['amount']>0:
         removed =Input * sep_eff
     else:
-        removed = np.zeros(60)
+        removed = np.zeros(len(LCI.Index))
     remained =Input - removed
     
     #Equipment input
@@ -450,8 +450,8 @@ def MS4_HDPE(Input,sep_eff,InputData,LCI):
 ### HDPE sold by type?
 def HDPE_type(Input,InputData):
     #Mass Calculation
-    HDPE_P = np.zeros(60)
-    HDPE_T = np.zeros(60)
+    HDPE_P = np.zeros(Input.shape[0])
+    HDPE_T = np.zeros(Input.shape[0])
     
     #HDPE - Pigmented Containers index 19
     if InputData.Rec_Sorted_material['HDPE_Pigmented']['amount']==1:
@@ -478,7 +478,7 @@ def Magnet(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['Ferrous']['amount']>0:
         removed =Input * sep_eff
     else:
-        removed = np.zeros(60)
+        removed = np.zeros(len(LCI.Index))
     remained =Input - removed
     
     
@@ -494,7 +494,7 @@ def MS4_Fe(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['Ferrous']['amount']>0:
         removed =Input * sep_eff
     else:
-        removed = np.zeros(60)
+        removed = np.zeros(len(LCI.Index))
     remained =Input - removed
     
     #Equipment input
@@ -519,7 +519,7 @@ def EDS(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['Aluminous']['amount']>0:
         removed =Input * sep_eff
     else:
-        removed = np.zeros(60)
+        removed = np.zeros(len(LCI.Index))
     remained =Input - removed
     
     #Resource use calculation
@@ -534,7 +534,7 @@ def MS4_Al(Input,sep_eff,InputData,LCI):
     if InputData.Rec_material['Aluminous']['amount']>0:
         removed =Input * sep_eff
     else:
-        removed = np.zeros(60)
+        removed = np.zeros(len(LCI.Index))
     remained =Input - removed
     
     #Equipment input
@@ -569,7 +569,7 @@ def Baler_2Way(Input,InputData,LCI):
     calc_resource(baled,baled,baled,Eq,InputData,LCI)
     
     #Density
-    Density = np.ones(60)*10**12 #using big density for non-recycab
+    Density = np.ones(len(LCI.Index))*10**12 #using big density for non-recycab
     Density[[28,29,30,32]] = InputData.Rec_BaleDens['Aluminous']['amount']
     Density[[26,27,31]] = InputData.Rec_BaleDens['Ferrous']['amount']
     Density[[18,19]] = InputData.Rec_BaleDens['HDPE']['amount']
@@ -619,9 +619,9 @@ def Conveyor(Input,InputData,LCI):
 ### Secondary sort for mixed paper
 def Mixed_paper_separation(Input,InputData):
     #Mass Calculation
-    ONP=np.zeros(60)
-    OFF=np.zeros(60)
-    Fiber_Other=np.zeros(60)
+    ONP=np.zeros(Input.shape[0])
+    OFF=np.zeros(Input.shape[0])
+    Fiber_Other=np.zeros(Input.shape[0])
     
     # Separate Newsprint index is 9
     if InputData.Rec_Sorted_material['Newsprint']['amount']==1:
