@@ -24,33 +24,45 @@ class WTE(ProcessModel):
 
         ### Energy Calculations
         self.Energy_Calculations=pd.DataFrame(index = self.Index)
-        
-        #'MJ/kgww'
-        self.Energy_Calculations['Energy_Loss_Due_to_Water'] = (-1) * self.Material_Properties['Moisture Content'].values / 100 * self.CommonData.Evap_heat['Water_Evap_Heat']['amount'] 
-        
-        #'MJ/kgww'
-        self.Energy_Calculations['Energy_Loss_Due_to_Ashes'] = (-1) *  self.process_data['Heat Lost via Ashes - Cp (J/g K)'].values * \
-                                                        self.process_data['Temperature Difference (K)'].values /1000 * (self.Material_Properties['Ash Content'].values/100 + \
-                                                        self.Material_Properties['Volatile Solids'].values/100*(1-self.process_data['Combustion Efficiency (% of VS)'].values/100))\
-                                                        * (100-self.Material_Properties['Moisture Content'].values) /100
 
-        #'MJ/kgww'
-        self.Energy_Calculations['Energy_Produced'] = self.Material_Properties['Lower Heating Value'].values * self.process_data['Combustion Efficiency (% of VS)'].values/100 * \
-                                                (100-self.Material_Properties['Moisture Content'].values)/100
+        # MJ/Mg
+        self.Energy_Calculations['Energy_Loss_Due_to_Water'] = (-1 * self.Material_Properties['Moisture Content'].values / 100 *
+                                                                self.CommonData.Evap_heat['Water_Evap_Heat']['amount'] * 1000)
+
+        # MJ/Mg
+        self.Energy_Calculations['Energy_Loss_Due_to_Ashes'] = (-1 *  self.process_data['Heat Lost via Ashes - Cp (J/g K)'].values *
+                                                                self.process_data['Temperature Difference (K)'].values *
+                                                                (self.Material_Properties['Ash Content'].values / 100 +
+                                                                 self.Material_Properties['Volatile Solids'].values / 100 *
+                                                                 (1 - self.process_data['Combustion Efficiency (% of VS)'].values / 100)) *
+                                                                (100-self.Material_Properties['Moisture Content'].values) /100)
+
+        # MJ/Mg
+        self.Energy_Calculations['Energy_Produced'] = (self.Material_Properties['Lower Heating Value'].values *
+                                                       self.process_data['Combustion Efficiency (% of VS)'].values / 100 *
+                                                       (100 - self.Material_Properties['Moisture Content'].values) / 100 * 1000)
 
 
-        #'MJ/kgww'
-        self.Energy_Calculations['Total_Energy_Produced'] = self.Energy_Calculations['Energy_Produced'].values + self.Energy_Calculations['Energy_Loss_Due_to_Ashes'].values + \
-                                                       self.Energy_Calculations['Energy_Loss_Due_to_Water'].values
+        # MJ/Mg
+        self.Energy_Calculations['Net_Energy_Produced'] = (self.Energy_Calculations['Energy_Produced'].values +
+                                                           self.Energy_Calculations['Energy_Loss_Due_to_Ashes'].values +
+                                                           self.Energy_Calculations['Energy_Loss_Due_to_Water'].values)
 
-        # 'kWh/kgww'
-        self.Energy_Calculations['Energy_Recovered_as_Electricity'] = self.Energy_Calculations['Total_Energy_Produced'].values * self.InputData.Elec_Prod_Eff['Net_Efficiency']['amount'] / 3.6
+        # kWh/Mg
+        self.Energy_Calculations['Energy_Recovered_as_Electricity'] = (self.Energy_Calculations['Net_Energy_Produced'].values *
+                                                                       self.InputData.Elec_Prod_Eff['Gross_Efficiency']['amount'] / 3.6)
 
-        # 'kWh/Mgww'
-        self.Energy_Calculations['Net_Electricity_Use'] = self.Energy_Calculations['Energy_Recovered_as_Electricity'].values * (-1000)
+        # kWh/Mg
+        self.Energy_Calculations['Electricity_Use'] = (self.Energy_Calculations['Energy_Recovered_as_Electricity'].values *
+                                                       self.InputData.Elec_Prod_Eff['Internal_use']['amount'])
 
-        #'MJ/Mgww'
-        self.Energy_Calculations['Heat_Recovered'] = self.Energy_Calculations['Total_Energy_Produced'].values * 1000 * self.InputData.Elec_Prod_Eff['Heat_prod_Eff']['amount']
+        # kWh/Mg
+        self.Energy_Calculations['Net_Electricity_Produced'] = (self.Energy_Calculations['Energy_Recovered_as_Electricity'].values -
+                                                                self.Energy_Calculations['Electricity_Use'].values)
+
+        #'MJ/Mg'
+        self.Energy_Calculations['Heat_Recovered'] = (self.Energy_Calculations['Net_Energy_Produced'].values *
+                                                      self.InputData.Elec_Prod_Eff['Heat_prod_Eff']['amount'])
 
         ### Combustion Emission
         self.Combustion_Emission = pd.DataFrame(index = self.Index)
@@ -206,7 +218,7 @@ class WTE(ProcessModel):
             Waste[y]['Cu'] = self.Post_Combustion_Solids['Copper_Recovery'][y]
 
         ### Output Technospphere Database
-            Technosphere[y][('Technosphere', 'Electricity_production')] = (-1) * self.Energy_Calculations['Net_Electricity_Use'][y]
+            Technosphere[y][('Technosphere', 'Electricity_production')] = self.Energy_Calculations['Net_Electricity_Produced'][y]
 
             Technosphere[y][('Technosphere', 'Heat_Steam')] = self.Energy_Calculations['Heat_Recovered'][y]
 
