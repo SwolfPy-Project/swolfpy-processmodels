@@ -12,7 +12,8 @@ with open('HISTORY.rst') as history_file:
 
 requirements = [
 "swolfpy_inputdata",
-"numpy_financial"
+"numpy_financial",
+"plotly"
 ]
 
 setup_requirements = [ ]

@@ -1,2 +1,10 @@
 swolfpy_inputdata
 numpy_financial
+xlrd
+pandas
+plotly
+jupyter
+pytest
+pytest-cov
+pytest-flake8
+coverage
