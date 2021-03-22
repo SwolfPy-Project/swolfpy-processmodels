@@ -10,6 +10,8 @@ from swolfpy_inputdata import AD_Input
 from .flow import flow
 from .AD_subprocess import AD_screen, AD_Post_screen, AD_mix, AD_curing, AD_compost_use, add_LCI, add_water_AD, Reactor, Dewater, POTW
 import numpy_financial as npf
+import plotly.graph_objects as go
+from plotly.offline import plot
 
 
 class AD(ProcessModel):
@@ -52,9 +54,9 @@ class AD(ProcessModel):
         add_LCI('Residual', self.S2_residuls.data['mass'].values / 1000, self.LCI)
 
 ### Adding Water
-        water_flow = (self.S1_unders.data['mass'].values * self.InputData.Material_Properties['ad_mcReactor']['amount'] - self.S1_unders.data['moist_cont'].values)\
+        self.water_flow = (self.S1_unders.data['mass'].values * self.InputData.Material_Properties['ad_mcReactor']['amount'] - self.S1_unders.data['moist_cont'].values)\
                       /(1 - self.InputData.Material_Properties['ad_mcReactor']['amount'])
-        self.to_reactor = add_water_AD(self.S1_unders, water_flow, self.Material_Properties, self.flow_init)
+        self.to_reactor = add_water_AD(self.S1_unders, self.water_flow, self.Material_Properties, self.flow_init)
 
 ### Reactor
         self.digestate = Reactor(self.to_reactor, self.CommonData, self.process_data, self.InputData, self.Material_Properties,
@@ -62,20 +64,20 @@ class AD(ProcessModel):
 
 ### Dewatering
         self.Dig_to_Curing_1, self.liq_rem, self.liq_treatment_vol = Dewater(self.digestate, self.CommonData, self.process_data, self.InputData,
-                                                                             self.Material_Properties, water_flow, self.Assumed_Comp.values,
+                                                                             self.Material_Properties, self.water_flow, self.Assumed_Comp.values,
                                                                              self.LCI, self.flow_init)
 
 ### Mix Dig_to_Curing_1 and S2_to_curing
         self.Dig_to_Curing = AD_mix(self.Dig_to_Curing_1, self.S2_to_curing, self.Material_Properties, self.flow_init)
 
 ### Curing
-        self.compot_to_ps, self.WC_SC = AD_curing(self.Dig_to_Curing, self.to_reactor, self.CommonData, self.process_data,
+        self.compost_to_ps, self.WC_SC = AD_curing(self.Dig_to_Curing, self.to_reactor, self.CommonData, self.process_data,
                                                   self.InputData, self.Assumed_Comp, self.Material_Properties, self.LCI,
                                                   self.flow_init)
 
 ### Post_screen
-        self.FinalCompost = AD_Post_screen(self.compot_to_ps, self.WC_SC, self.InputData, self.Assumed_Comp.values,
-                                           self.Material_Properties, self.LCI, self.flow_init)
+        self.FinalCompost, self.Screen_rejects = AD_Post_screen(self.compost_to_ps, self.WC_SC, self.InputData, self.Assumed_Comp.values,
+                                                                self.Material_Properties, self.LCI, self.flow_init)
 
 ###  POTW
         POTW(self.liq_treatment_vol, self.liq_rem, self.to_reactor, self.Dig_to_Curing, self.FinalCompost, self.Index,
@@ -149,7 +151,7 @@ class AD(ProcessModel):
         # NMVOC, non-methane volatile organic compounds, unspecified origin ('air',)
         self.LCI['report_ NMVOC'] = self.LCI['NMVOC, non-methane volatile organic compounds, unspecified origin'].values + self.LCI['NMVOCs'].values
 
-        bio_rename_dict = { 'Ammonia':('biosphere3', '87883a4e-1e3e-4c9d-90c0-f1bea36f8014'), # Ammonia ('air',)
+        self._bio_rename_dict = { 'Ammonia':('biosphere3', '87883a4e-1e3e-4c9d-90c0-f1bea36f8014'), # Ammonia ('air',)
                             'Direct Carbon Storage and Humus Formation':('biosphere3', 'e4e9febc-07c1-403d-8d3a-6707bb4d96e6'), # Carbon dioxide, from soil or biomass stock ('air',)
                             'report_ CO2 non-fossil':('biosphere3', 'eba59fd6-f37e-41dc-9ca3-c7ea22d602c7'), # Carbon dioxide, non-fossil ('air',)
                             'Carbon monoxide (CO)':('biosphere3', '2cb2333c-1599-46cf-8435-3dffce627524'), # Carbon monoxide, non-fossil ('air',)
@@ -206,10 +208,158 @@ class AD(ProcessModel):
         # report function rename the LCI dataframe, so we use the self.LCI_index to rename LCI only one time 
         # unless the we call the calc function
         if not self.LCI_index:
-            self.LCI = self.LCI.rename(columns=bio_rename_dict)
+            self.LCI = self.LCI.rename(columns=self._bio_rename_dict)
             self.LCI_index = True
 
-        self.Biosphere = self.LCI[list(bio_rename_dict.values()) + [('biosphere3','Capital_Cost'), ('biosphere3','Operational_Cost')]].transpose().to_dict()
+        self.Biosphere = self.LCI[list(self._bio_rename_dict.values()) + [('biosphere3','Capital_Cost'), ('biosphere3','Operational_Cost')]].transpose().to_dict()
         self.AD["Biosphere"] = self.Biosphere
 
         return(self.AD)
+
+    def plot(self, composition, saveHTML=False):
+        source = [] 
+        target = []
+        value = []
+        lable = ['Incoming Mass', 'Screen 1', 'Screen 2', 'Residuals', 'Add Water', 'Mixer', 'Reactor', 'Dewater',
+                 'Curing', 'Post Screen', 'Finished Compost', 'WWT', 'Makeup Water', 'Wood Chips']
+        lable_link = []
+        color_link = []
+        
+        # Link for colors: https://www.rapidtables.com/web/color/RGB_Color.html
+        
+        self.Input.update(composition)
+        source.append(lable.index('Incoming Mass'))
+        target.append(lable.index('Screen 1'))
+        value.append(self.Input.flow)
+        lable_link.append('Input')
+        self.S1_unders.update(composition)
+        color_link.append('rgba({}, {}, {}, 0.8)'.format(*(128,128,0))) # Olive
+
+        source.append(lable.index('Screen 1'))
+        target.append(lable.index('Add Water'))
+        value.append(self.S1_unders.flow)
+        lable_link.append('S1_unders')
+        color_link.append('rgba({}, {}, {}, 0.8)'.format(*(128,128,0))) # Olive        
+
+        self.S1_overs.update(composition)
+        source.append(lable.index('Screen 1'))
+        target.append(lable.index('Screen 2'))
+        value.append(self.S1_overs.flow)
+        lable_link.append('S1_overs')
+        color_link.append('rgba({}, {}, {}, 0.8)'.format(*(128,128,128))) # Gray
+
+        self.S2_residuls.update(composition)
+        source.append(lable.index('Screen 2'))
+        target.append(lable.index('Residuals'))
+        value.append(self.S2_residuls.flow)
+        lable_link.append('S2_residuls')
+        color_link.append('rgba({}, {}, {}, 0.8)'.format(*(128,128,128))) # Gray
+        
+        self.S2_to_curing.update(composition)
+        source.append(lable.index('Screen 2'))
+        target.append(lable.index('Mixer'))
+        value.append(self.S2_to_curing.flow)
+        lable_link.append('S2_to_curing')
+        color_link.append('rgba({}, {}, {}, 0.8)'.format(*	(128,128,0))) # Olive
+
+        self.to_reactor.update(composition)
+        source.append(lable.index('Add Water'))
+        target.append(lable.index('Reactor'))
+        value.append(self.to_reactor.flow)
+        lable_link.append('to_reactor')
+        color_link.append('rgba({}, {}, {}, 0.8)'.format(*(85,107,47))) # dark olive green
+
+        self.digestate.update(composition)
+        source.append(lable.index('Reactor'))
+        target.append(lable.index('Dewater'))
+        value.append(self.digestate.flow)
+        lable_link.append('digestate')
+        color_link.append('rgba({}, {}, {}, 0.8)'.format(*(107,142,35))) # olive drab
+
+        self.Dig_to_Curing_1.update(composition)
+        source.append(lable.index('Dewater'))
+        target.append(lable.index('Mixer'))
+        value.append(self.Dig_to_Curing_1.flow)
+        lable_link.append('Dig_to_Curing_1')
+        color_link.append('rgba({}, {}, {}, 0.8)'.format(*(124,252,0))) # lawn green
+        
+        
+        source.append(lable.index('Dewater'))
+        target.append(lable.index('Add Water'))
+        rec_water = sum(self.liq_rem * composition) - sum(self.liq_treatment_vol * composition) * 1000
+        value.append(rec_water)
+        lable_link.append('liq_rem')
+        color_link.append('rgba({}, {}, {}, 0.8)'.format(*(0,0,128))) # navy
+
+        self.Dig_to_Curing.update(composition)
+        source.append(lable.index('Mixer'))
+        target.append(lable.index('Curing'))
+        value.append(self.Dig_to_Curing.flow)
+        lable_link.append('Dig_to_Curing')
+        color_link.append('rgba({}, {}, {}, 0.8)'.format(*(60,179,113))) # medium sea green
+
+        self.compost_to_ps.update(composition)
+        source.append(lable.index('Curing'))
+        target.append(lable.index('Post Screen'))
+        value.append(self.compost_to_ps.flow)
+        lable_link.append('compost_to_ps')
+        color_link.append('rgba({}, {}, {}, 0.8)'.format(*(0,100,0))) # dark green
+
+        source.append(lable.index('Curing'))
+        target.append(lable.index('Post Screen'))
+        value.append(sum(self.WC_SC * composition))
+        lable_link.append('WC_SC')
+        color_link.append('rgba({}, {}, {}, 0.8)'.format(*(160,82,45))) # sienna
+
+        source.append(lable.index('Wood Chips'))
+        target.append(lable.index('Curing'))
+        value.append(sum(self.WC_SC * composition) - sum(self.Screen_rejects * composition))
+        lable_link.append('Wood Chips')
+        color_link.append('rgba({}, {}, {}, 0.8)'.format(*(160,82,45))) # sienna
+
+        source.append(lable.index('Post Screen'))
+        target.append(lable.index('Curing'))
+        value.append(sum(self.Screen_rejects * composition))
+        lable_link.append('Screen_rejects')
+        color_link.append('rgba({}, {}, {}, 0.8)'.format(*(160,82,45))) # sienna
+
+        self.FinalCompost.update(composition)
+        source.append(lable.index('Post Screen'))
+        target.append(lable.index('Finished Compost'))
+        value.append(self.FinalCompost.flow)
+        lable_link.append('FinalCompost')
+        color_link.append('rgba({}, {}, {}, 0.8)'.format(*(0,128,0))) # green
+
+        source.append(lable.index('Makeup Water'))
+        target.append(lable.index('Add Water'))
+        value.append(sum(self.water_flow * composition) - rec_water)
+        lable_link.append('Makeup_water')
+        color_link.append('rgba({}, {}, {}, 0.8)'.format(*(0,0,255))) # blue
+        
+        source.append(lable.index('Dewater'))
+        target.append(lable.index('WWT'))
+        value.append(sum(self.liq_treatment_vol * composition)*1000)
+        lable_link.append('liq_treatment_vol')
+        color_link.append('rgba({}, {}, {}, 0.8)'.format(*(0,0,139))) #dark blue
+
+        fig = go.Figure(data=[go.Sankey(orientation="h",
+                                        valueformat=".0f",
+                                        valuesuffix="kg",
+                                        node=dict(pad=20,
+                                                  thickness=20,
+                                                  line=dict(color="black", width = 0.5),
+                                                  label=lable),
+                                        link=dict(source=source,
+                                                  target=target,
+                                                  value=value,
+                                                  label=lable_link,
+                                                  color=color_link))])
+
+        fig.update_layout(title_text="Mass flow diagram for AD process",
+                          font_size=14,
+                          hoverlabel=dict(font_size=14))
+        if not saveHTML:
+            fig.show()
+        else:
+            plot(fig, 'plot.html', auto_open=True)
+                 

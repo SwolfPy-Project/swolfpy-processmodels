@@ -256,9 +256,9 @@ def AD_curing(input, input_to_reactor, CommonData, process_data, AD_input, assum
 def AD_Post_screen(input, input_WC_SR, AD_input, assumed_comp, Material_Properties, LCI, flow_init):
     product = deepcopy(flow_init)
 
-    screan_out_mass = input_WC_SR * AD_input.Post_Screen['ad_scrEff_WC']['amount']
+    Screen_rejects = input_WC_SR * AD_input.Post_Screen['ad_scrEff_WC']['amount']
 
-    Remain_WC = input_WC_SR - screan_out_mass
+    Remain_WC = input_WC_SR - Screen_rejects
     Remain_WC_water = Remain_WC * AD_input.Material_Properties['wcMC']['amount']
     Remain_WC_solid = Remain_WC - Remain_WC_water
     Remain_WC_VS = Remain_WC_solid * AD_input.Material_Properties['wcVSC']['amount']
@@ -279,7 +279,7 @@ def AD_Post_screen(input, input_WC_SR, AD_input, assumed_comp, Material_Properti
     # Resource use
     Electricity = AD_input.Post_Screen['ad_engScreen']['amount'] * (input.data['mass'].values + input_WC_SR)
     add_LCI(('Technosphere', 'Electricity_consumption'), Electricity, LCI)
-    return(product)
+    return(product, Screen_rejects)
 
 
 def POTW (liq_treatment_vol, liq_rem, input_to_reactor, Dig_to_Curing, FinalCompost, index,AD_input, assumed_comp, Material_Properties, CommonData, LCI):
