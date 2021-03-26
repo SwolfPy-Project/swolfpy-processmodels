@@ -28,17 +28,38 @@ Life-Cylce Process Models for swolfpy (swolfpy_processmodels)
 * Documentation: https://swolfpy.readthedocs.io.
 * Repository: https://bitbucket.org/msm_sardar/swolfpy-processmodels
 * Other links: 
-        https://go.ncsu.edu/swolfpy
 
-        https://jwlevis.wixsite.com/swolf
+  * https://go.ncsu.edu/swolfpy
+  * https://jwlevis.wixsite.com/swolf
 
-
+|
 Features
 --------
-* Life-cycle process models of swolfpy, include: Landfill, Waste-to-Energy (WTE), Composting, Anaerobic Digestion (AD), Single Stream Material Recovery Facility (MRF), Reprocessing, and Collection.
-* Monte Carlo simulation
+* Life-cycle process models for solid waste management (SWM) processes.
+* Built-in Monte Carlo simulation
+
+.. list-table:: Life-cycle process models
+   :widths: auto
+   :header-rows: 1
+
+   * - Process model 
+     - Description
+   * - Landfill (**LF**)
+     - Calculates emissions, material use, and energy use associated with construction, operations, 
+       closure and post-closure activities, landfill gas and leachate management, and carbon storage.
+   * - Waste-to-Energy (**WTE**)
+     - Calculates emissions, mass flows, and resource use and recovery for the mass burn WTE process. 
+   * - Composting (**Comp**)
+     - Calculates emissions, mass flows, and resource use and recovery for aerobic composting process and final use of compost.
+   * - Anaerobic Digestion (**AD**)
+     - Calculates emissions, mass flows, and resource use and recovery for anaerobic digestion process and final use of compost.
+   * - Single-Stream Material Recovery facility (**SS_MRF**)
+     - Calculates cost, emissions, and energy use associated with material recovery facilities.
+   * - Single Family Collection (**SF_Col**)
+     - Calculates cost, emissions, and fossil fuel use associated with MSW collection.
 
 
+|
 .. Installation
 
 Installation
@@ -61,5 +82,12 @@ Installation
 
         pip install swolfpy_processmodels
 
+6- Use in python (e.g., Landfill model)::
+
+        import swolfpy_processmodels as sppm 
+        model = sppm.LF()
+        model.calc()
+        LCI_report = model.report()
+        LCI_report
 
 .. endInstallation
