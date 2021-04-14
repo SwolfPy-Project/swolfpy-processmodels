@@ -8,8 +8,6 @@ Tests for `swolfpy_processmodels` package
 """
 import swolfpy_processmodels as sp
 from swolfpy_inputdata import CommonData
-from pathlib import Path
-import pandas as pd
 
 
 def LCA_model_helper(model):
@@ -94,16 +92,11 @@ def test_SF_Col():
 
 
 def test_Distance():
-    # Using csv as input
-    dist = sp.Distance(path=Path(__file__).parent / 'Distance.csv')
-    assert dist.Distance[('P1', 'P2')] == 20
-    assert dist.Distance[('P3', 'P1')] == 30
-    assert dist.Distance[('P2', 'P3')] == dist.Distance[('P3', 'P2')]
-
-    # Using pandas Dataframe as input
-    Processes = ['LF', 'WTE', 'AD']
-    Data = pd.DataFrame([[None, 20, 30], [None, None, 10], [None, None, None]],
-                        index=Processes,
-                        columns=Processes)
-    distance = sp.Distance(Data=Data)
-    assert distance.Distance[('LF', 'WTE')] == 20
+    dist_data = sp.Distance.create_distance_table(['P1', 'P2', 'P3'], ['Heavy Duty Truck'])
+    dist_data['Heavy Duty Truck']['P1']['P2'] = 20
+    dist_data['Heavy Duty Truck']['P3']['P1'] = 30
+    dist_data['Heavy Duty Truck']['P3']['P2'] = 20
+    dist = sp.Distance(dist_data)
+    assert dist.Distance[('P1', 'P2')]['Heavy Duty Truck'] == 20
+    assert dist.Distance[('P3', 'P1')]['Heavy Duty Truck'] == 30
+    assert dist.Distance[('P2', 'P3')]['Heavy Duty Truck'] == dist.Distance[('P3', 'P2')]['Heavy Duty Truck']

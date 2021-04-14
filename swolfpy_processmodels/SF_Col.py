@@ -140,7 +140,7 @@ class SF_Col(ProcessModel):
         destination={}
         for P in Treatment_processes:
             if product in Treatment_processes[P]['input_type']:
-                destination[P] = self.Distance.Distance[(self.process_name,P)]
+                destination[P] = self.Distance.Distance[(self.process_name,P)]['Heavy Duty Truck']
         return(destination)
 
 ### calculating LCI and cost for different locations
