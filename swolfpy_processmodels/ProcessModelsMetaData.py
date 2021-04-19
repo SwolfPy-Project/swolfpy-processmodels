@@ -30,7 +30,7 @@ ProcessModelsMetaData['SS_MRF'] = {}
 ProcessModelsMetaData['SS_MRF']['Name'] = 'Single Stream Material Recovery Facility'
 ProcessModelsMetaData['SS_MRF']['Process_Type'] = 'Treatment'
 ProcessModelsMetaData['SS_MRF']['File'] = 'SS_MRF.py'
-ProcessModelsMetaData['SS_MRF']['InputType'] = ['SSR']
+ProcessModelsMetaData['SS_MRF']['InputType'] = ['SSR', 'REC']
 
 ProcessModelsMetaData['Reproc'] = {}
 ProcessModelsMetaData['Reproc']['Name'] = 'Reprocessing'
