@@ -51,6 +51,7 @@ class SF_Col(ProcessModel):
     def calc_composition(self):
         #Single Family Residential Waste Generation Rate (kg/household-week)
         g_res = 7*self.InputData.Col['res_per_dwel']['amount']*self.InputData.Col['res_gen']['amount']
+        gen_per_week = g_res * self.process_data['Comp']
         total_waste_gen = g_res * self.InputData.Col['houses_res']['amount'] * 52 /1000
 
         
@@ -84,42 +85,49 @@ class SF_Col(ProcessModel):
             self.P_use[j]= 1 if self.col_proc[j]>0 else 0
         
         #SWM Mass separated by collection process (Calculation)
-        columns = ['RWC','SSR','DSR','MSR','LV','SSYW','SSO','DryRes','REC','WetRes','MRDO','SSYWDO','MSRDO']
+        columns = ['RWC', 'SSR', 'DSR', 'MSR', 'LV', 'SSYW', 'SSO', 'DryRes', 'REC', 'WetRes', 'MRDO', 'SSYWDO', 'MSRDO']
         self.mass=pd.DataFrame(index =self.Index,columns=columns)
         
         for i in ['SSR','DSR','MSR','SSYW','SSO','REC','SSYWDO','MSRDO']:
             self.mass[i] = g_res * self.process_data[i] * self.process_data['Comp'] * self.P_use[i]
             self.mass.loc['Yard_Trimmings_Leaves',i] *= (1-self.process_data.loc['Yard_Trimmings_Leaves','LV'] )
         self.mass['LV'] = g_res * self.process_data['LV'] * self.process_data['Comp'] * self.P_use['LV']
-        
-        
-        
+
+                
+        def separate_col_mass(j):
+            mass = pd.Series(data=np.zeros(len(self.mass)) ,index=self.mass.index)
+            for i in ['SSR', 'DSR', 'MSR', 'LV', 'SSYW', 'SSYWDO', 'MSRDO']:
+                mass += self.mass[i] * self.col_schm[j]['separate_col'][i]
+            return(mass)
+
         # Calculating the residual waste after separate collection
         for j in ['RWC','MRDO']:
-            self.mass[j]= (g_res * self.process_data[j] * self.process_data['Comp'] - self.mass['SSR']*self.col_schm[j]['separate_col']['SSR'] - \
-             self.mass['DSR']*self.col_schm[j]['separate_col']['DSR'] - self.mass['MSR']*self.col_schm[j]['separate_col']['MSR'] - \
-             self.mass['LV']*self.col_schm[j]['separate_col']['LV'] - self.mass['SSYW']*self.col_schm[j]['separate_col']['SSYW'] -\
-             self.mass['SSYWDO']*self.col_schm[j]['separate_col']['SSYWDO']-self.mass['MSRDO']*self.col_schm[j]['separate_col']['MSRDO'])* self.P_use[j]
-        
-        self.mass['DryRes']= (g_res * self.process_data['DryRes'] * self.process_data['Comp'] - self.mass['SSR']*self.col_schm['SSO_DryRes']['separate_col']['SSR'] - \
-         self.mass['DSR']*self.col_schm['SSO_DryRes']['separate_col']['DSR'] - self.mass['MSR']*self.col_schm['SSO_DryRes']['separate_col']['MSR'] - \
-         self.mass['LV']*self.col_schm['SSO_DryRes']['separate_col']['LV'] - self.mass['SSYW']*self.col_schm['SSO_DryRes']['separate_col']['SSYW'] -\
-         self.mass['SSYWDO']*self.col_schm['SSO_DryRes']['separate_col']['SSYWDO']-self.mass['MSRDO']*self.col_schm['SSO_DryRes']['separate_col']['MSRDO']-\
-         self.mass['SSO'])* self.P_use['DryRes']
-                
-        self.mass['WetRes']= (g_res * self.process_data['WetRes'] * self.process_data['Comp'] - self.mass['SSR']*self.col_schm['REC_WetRes']['separate_col']['SSR'] - \
-         self.mass['DSR']*self.col_schm['REC_WetRes']['separate_col']['DSR'] - self.mass['MSR']*self.col_schm['REC_WetRes']['separate_col']['MSR'] - \
-         self.mass['LV']*self.col_schm['REC_WetRes']['separate_col']['LV'] - self.mass['SSYW']*self.col_schm['REC_WetRes']['separate_col']['SSYW'] -\
-         self.mass['SSYWDO']*self.col_schm['REC_WetRes']['separate_col']['SSYWDO']-self.mass['MSRDO']*self.col_schm['REC_WetRes']['separate_col']['MSRDO']-\
-         self.mass['REC'])* self.P_use['WetRes']
+            self.mass[j]= (g_res * self.process_data[j] * self.process_data['Comp'] - separate_col_mass(j))* self.P_use[j]
+
+        # SSO_DryRes
+        index_with_error = self.mass['SSO'] + separate_col_mass('SSO_DryRes') > gen_per_week
+        self.mass.loc[index_with_error, 'SSO'] = gen_per_week[index_with_error] - separate_col_mass('SSO_DryRes')[index_with_error]
+        self.mass['DryRes']= (g_res * self.process_data['DryRes'] * self.process_data['Comp'] - separate_col_mass('SSO_DryRes') - self.mass['SSO'])* self.P_use['DryRes']
+
+        # REC_WetRes
+        index_with_error = self.mass['REC'] + separate_col_mass('REC_WetRes') > gen_per_week
+        self.mass.loc[index_with_error, 'REC'] = gen_per_week[index_with_error] - separate_col_mass('REC_WetRes')[index_with_error]
+        self.mass['WetRes']= (g_res * self.process_data['WetRes'] * self.process_data['Comp'] - separate_col_mass('REC_WetRes') - self.mass['REC'])* self.P_use['WetRes']
 
         #Annual Mass Flows (Mg/yr)
         self.col_massflow=pd.DataFrame(index =self.Index)
         for i in ['RWC','SSR','DSR','MSR','MSRDO','LV','SSYW','SSYWDO','SSO','DryRes','REC','WetRes','MRDO','SSYWDO','MSRDO']:
             self.col_massflow[i]=self.mass[i] * self.InputData.Col['houses_res']['amount'] * 52/1000 * self.col_proc[i]
+        
+
+        # Check for negative mass flows
+        if (self.col_massflow.values<0).any().any():
+            raise Exception(f'Negative mass flows in collection model [{self.process_name}]!')
 
         #Check generated mass = Collected mass
-        self.Mass_balance_Error = sum(self.col_massflow.sum())/total_waste_gen
+        ratio = sum(self.col_massflow.sum())/total_waste_gen
+        if ratio > 1.01 or ratio < 0.99:
+            raise Exception(f'Mass balance error in collection model [{self.process_name}]!')
 
         #Volume Composition of each collection process for each sector
         mass_to_cyd = self.process_data['Bulk_Density'].apply(lambda x: 1/x*1.30795 if x >0 else 0)
