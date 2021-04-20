@@ -9,6 +9,7 @@ from swolfpy_inputdata import SF_Col_Input
 from .ProcessModel import ProcessModel
 import numpy_financial as npf
 import numpy as np
+import warnings
 
 
 class SF_Col(ProcessModel):
@@ -47,6 +48,33 @@ class SF_Col(ProcessModel):
                   'REC_WetRes':{'Contribution':0,'separate_col':{'SSR':0,'DSR':0,'MSR':0,'MSRDO':0,'SSYW':0,'SSYWDO':0}},
                   'MRDO':{'Contribution':0,'separate_col':{'SSR':0,'DSR':0,'MSR':0,'MSRDO':0,'SSYW':0,'SSYWDO':0}}}          
         return(scheme)
+
+    def _normalize_scheme(self, warn=True):
+        """
+        Used in optimization. 
+        """
+        contribution = [x['Contribution'] for x in self.col_schm.values()]
+        if abs(sum(contribution) - 1) > 0.01:
+            if warn:
+                warnings.warn('Error in collection scheme [Sum(Contribution) > 1]!')
+            for i in ['RWC', 'SSO_DryRes', 'REC_WetRes', 'MRDO']:
+                self.col_schm[i]['Contribution'] /= sum(contribution)
+        
+        for i in ['RWC', 'SSO_DryRes', 'REC_WetRes', 'MRDO']:
+            sep_organics = self.col_schm[i]['separate_col']['SSYW'] + self.col_schm[i]['separate_col']['SSYWDO']
+            if sep_organics > 1:
+                if warn:
+                    warnings.warn('Error in collection scheme [Sum(separate organic) > 1]!')
+                for j in ['SSYW', 'SSYWDO']:
+                    self.col_schm[i]['separate_col'][j] /= sep_organics
+
+            sep_rec = (self.col_schm[i]['separate_col']['SSR'] + self.col_schm[i]['separate_col']['DSR'] +
+                       self.col_schm[i]['separate_col']['MSR'] + self.col_schm[i]['separate_col']['MSRDO'])
+            if sep_rec > 1:
+                if warn:
+                    warnings.warn('Error in collection scheme [Sum(separate recyclables) > 1]!')
+                for j in ['SSR', 'DSR', 'MSR', 'MSRDO']:
+                    self.col_schm[i]['separate_col'][j] /= sep_rec
     
     def calc_composition(self):
         #Single Family Residential Waste Generation Rate (kg/household-week)
@@ -122,12 +150,14 @@ class SF_Col(ProcessModel):
 
         # Check for negative mass flows
         if (self.col_massflow.values<0).any().any():
-            raise Exception(f'Negative mass flows in collection model [{self.process_name}]!')
+            #raise Exception(f'Negative mass flows in collection model [{self.process_name}]!')
+            warnings.warn('Negative mass flows in collection model [{self.process_name}]!')
 
         #Check generated mass = Collected mass
         ratio = sum(self.col_massflow.sum())/total_waste_gen
         if ratio > 1.01 or ratio < 0.99:
-            raise Exception(f'Mass balance error in collection model [{self.process_name}]!')
+            #raise Exception(f'Mass balance error in collection model [{self.process_name}]!')
+            warnings.warn(f'Mass balance error in collection model [{self.process_name}]!')
 
         #Volume Composition of each collection process for each sector
         mass_to_cyd = self.process_data['Bulk_Density'].apply(lambda x: 1/x*1.30795 if x >0 else 0)
