@@ -36,11 +36,10 @@ ProcessModelsMetaData['Reproc'] = {}
 ProcessModelsMetaData['Reproc']['Name'] = 'Reprocessing'
 ProcessModelsMetaData['Reproc']['Process_Type'] = 'Reprocessing'
 ProcessModelsMetaData['Reproc']['File'] = 'Reproc.py'
-ProcessModelsMetaData['Reproc']['InputType'] = ['Al','Fe','Cu',
+ProcessModelsMetaData['Reproc']['InputType'] = ['Al','Fe',
                                                 'OCC', 'Mixed_Paper', 'ONP', 'OFF', 'Fiber_Other',
                                                 'Brown_glass', 'Clear_glass', 'Green_glass', 'Mixed_Glass',
-                                                'PET', 'HDPE_Unsorted', 'HDPE_P', 'HDPE_T', 'PVC', 'LDPE_Film',
-                                                'Polypropylene', 'Polystyrene', 'Plastic_Other', 'Mixed_Plastic']
+                                                'PET', 'HDPE_P', 'HDPE_T', 'LDPE_Film']
                                                
 ProcessModelsMetaData['SF_Col'] = {}
 ProcessModelsMetaData['SF_Col']['Name'] = 'Single Family Collection'
