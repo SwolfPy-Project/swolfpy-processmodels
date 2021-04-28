@@ -43,40 +43,62 @@ class SF_Col(ProcessModel):
         """
         Retrun the dictionary for collection_scheme as a sample. all the contributions are zero; user should define according to his/her case. 
         """
-        scheme = {'RWC':{'Contribution':0,'separate_col':{'SSR':0,'DSR':0,'MSR':0,'MSRDO':0,'SSYW':0,'SSYWDO':0}},
-                  'SSO_DryRes':{'Contribution':0,'separate_col':{'SSR':0,'DSR':0,'MSR':0,'MSRDO':0,'SSYW':0,'SSYWDO':0}},
-                  'REC_WetRes':{'Contribution':0,'separate_col':{'SSR':0,'DSR':0,'MSR':0,'MSRDO':0,'SSYW':0,'SSYWDO':0}},
-                  'MRDO':{'Contribution':0,'separate_col':{'SSR':0,'DSR':0,'MSR':0,'MSRDO':0,'SSYW':0,'SSYWDO':0}}}          
+        SepOrg = ['N/A', 'SSYW', 'SSYWDO']
+        SepRec = ['N/A', 'SSR', 'DSR', 'MSR', 'MSRDO']
+        scheme = {}
+        for i in SepOrg:
+            for j in SepRec:
+                scheme[('RWC', i, j)] = 0
+        for i in SepOrg:
+            scheme[('REC_WetRes', i, 'REC_WetRes')] = 0
+        for j in SepRec:
+            scheme[('SSO_DryRes', 'SSO_DryRes', j)] = 0
+        for i in ['N/A', 'SSYWDO']:
+            for j in ['N/A', 'MSRDO']:
+                scheme[('MRDO', i, j)] = 0
         return(scheme)
 
-    def _normalize_scheme(self, warn=True):
+    def _normalize_scheme(self, DropOff=True, warn=True):
         """
         Used in optimization. 
         """
-        contribution = [x['Contribution'] for x in self.col_schm.values()]
-        if abs(sum(contribution) - 1) > 0.01:
-            if warn:
-                warnings.warn('Error in collection scheme [Sum(Contribution) > 1]!')
-            for i in ['RWC', 'SSO_DryRes', 'REC_WetRes', 'MRDO']:
-                self.col_schm[i]['Contribution'] /= sum(contribution)
-        
-        for i in ['RWC', 'SSO_DryRes', 'REC_WetRes', 'MRDO']:
-            sep_organics = self.col_schm[i]['separate_col']['SSYW'] + self.col_schm[i]['separate_col']['SSYWDO']
-            if sep_organics > 1:
-                if warn:
-                    warnings.warn('Error in collection scheme [Sum(separate organic) > 1]!')
-                for j in ['SSYW', 'SSYWDO']:
-                    self.col_schm[i]['separate_col'][j] /= sep_organics
+        if not DropOff:
+            for k in self.col_schm:
+                if 'DO' in k:
+                    self.col_schm[k] = 0
 
-            sep_rec = (self.col_schm[i]['separate_col']['SSR'] + self.col_schm[i]['separate_col']['DSR'] +
-                       self.col_schm[i]['separate_col']['MSR'] + self.col_schm[i]['separate_col']['MSRDO'])
-            if sep_rec > 1:
-                if warn:
-                    warnings.warn('Error in collection scheme [Sum(separate recyclables) > 1]!')
-                for j in ['SSR', 'DSR', 'MSR', 'MSRDO']:
-                    self.col_schm[i]['separate_col'][j] /= sep_rec
-    
+        contribution =  sum(self.col_schm.values())
+        if abs(contribution - 1) > 0.01:
+            if warn:
+                warnings.warn('Error in collection scheme [Sum(Contribution) != 1]!')
+            for k, v in self.col_schm.items():
+                self.col_schm[k] = v/contribution
+
     def calc_composition(self):
+        self._col_schm = {'RWC':{'Contribution':0,'separate_col':{'SSR':0,'DSR':0,'MSR':0,'MSRDO':0,'SSYW':0,'SSYWDO':0}},
+          'SSO_DryRes':{'Contribution':0,'separate_col':{'SSR':0,'DSR':0,'MSR':0,'MSRDO':0,'SSYW':0,'SSYWDO':0}},
+          'REC_WetRes':{'Contribution':0,'separate_col':{'SSR':0,'DSR':0,'MSR':0,'MSRDO':0,'SSYW':0,'SSYWDO':0}},
+          'MRDO':{'Contribution':0,'separate_col':{'SSR':0,'DSR':0,'MSR':0,'MSRDO':0,'SSYW':0,'SSYWDO':0}}}
+        
+        for k, v in self.col_schm.items():
+            if 'RWC' in k:
+                self._col_schm['RWC']['Contribution'] += v
+            elif 'SSO_DryRes' in k:
+                self._col_schm['SSO_DryRes']['Contribution'] += v
+            elif 'REC_WetRes' in k:
+                self._col_schm['REC_WetRes']['Contribution'] += v
+            elif 'MRDO' in k:
+                self._col_schm['MRDO']['Contribution'] += v
+            else:
+                raise Exception('Error in collection scheme keys')
+
+        for k, v in self.col_schm.items():
+            if v > 0:
+                if k[1] not in ['N/A', 'SSO_DryRes', 'REC_WetRes']:
+                    self._col_schm[k[0]]['separate_col'][k[1]] += v/self._col_schm[k[0]]['Contribution']
+                if k[2] not in ['N/A', 'SSO_DryRes', 'REC_WetRes']:
+                    self._col_schm[k[0]]['separate_col'][k[2]] += v/self._col_schm[k[0]]['Contribution']
+
         #Single Family Residential Waste Generation Rate (kg/household-week)
         g_res = 7*self.InputData.Col['res_per_dwel']['amount']*self.InputData.Col['res_gen']['amount']
         gen_per_week = g_res * self.process_data['Comp']
@@ -90,22 +112,22 @@ class SF_Col(ProcessModel):
             LV_col = self.InputData.Col['Leaf_vacuum_amount']['amount']*1000/self.InputData.Col['res_pop']['amount']
             self.process_data.loc['Yard_Trimmings_Leaves','LV'] = 1 if LV_gen <= LV_col else LV_col/LV_gen
             for j in ['RWC','SSO_DryRes','REC_WetRes','MRDO']:
-                self.col_schm[j]['separate_col']['LV']=1 
+                self._col_schm[j]['separate_col']['LV']=1 
         else:
             for j in ['RWC','SSO_DryRes','REC_WetRes','MRDO']:
-                self.col_schm[j]['separate_col']['LV']=0
+                self._col_schm[j]['separate_col']['LV']=0
         self.col.loc['LV','Fr'] = self.InputData.Col['LV_serv_times']['amount']/self.InputData.Col['LV_serv_pd']['amount']
                 
 
         # Total fraction where this service is offered        
-        self.col_proc = {'RWC':self.col_schm['RWC']['Contribution'],
-                        'SSO':self.col_schm['SSO_DryRes']['Contribution'],
-                        'DryRes':self.col_schm['SSO_DryRes']['Contribution'],
-                        'REC':self.col_schm['REC_WetRes']['Contribution'],
-                        'WetRes':self.col_schm['REC_WetRes']['Contribution'],
-                        'MRDO':self.col_schm['MRDO']['Contribution']}
+        self.col_proc = {'RWC':self._col_schm['RWC']['Contribution'],
+                        'SSO':self._col_schm['SSO_DryRes']['Contribution'],
+                        'DryRes':self._col_schm['SSO_DryRes']['Contribution'],
+                        'REC':self._col_schm['REC_WetRes']['Contribution'],
+                        'WetRes':self._col_schm['REC_WetRes']['Contribution'],
+                        'MRDO':self._col_schm['MRDO']['Contribution']}
         for i in ['LV','SSR','DSR','MSR','MSRDO','SSYW','SSYWDO']:
-            self.col_proc[i] = sum([self.col_schm[j]['Contribution']*self.col_schm[j]['separate_col'][i] for j in ['RWC','SSO_DryRes','REC_WetRes','MRDO']])
+            self.col_proc[i] = sum([self._col_schm[j]['Contribution']*self._col_schm[j]['separate_col'][i] for j in ['RWC','SSO_DryRes','REC_WetRes','MRDO']])
             
         #Is this collection process offered? (1: in use, 0: not used)
         self.P_use = {}
@@ -125,7 +147,7 @@ class SF_Col(ProcessModel):
         def separate_col_mass(j):
             mass = pd.Series(data=np.zeros(len(self.mass)) ,index=self.mass.index)
             for i in ['SSR', 'DSR', 'MSR', 'LV', 'SSYW', 'SSYWDO', 'MSRDO']:
-                mass += self.mass[i] * self.col_schm[j]['separate_col'][i]
+                mass += self.mass[i] * self._col_schm[j]['separate_col'][i]
             return(mass)
 
         # Calculating the residual waste after separate collection
@@ -178,7 +200,7 @@ class SF_Col(ProcessModel):
         destination={}
         for P in Treatment_processes:
             if product in Treatment_processes[P]['input_type']:
-                destination[P] = self.Distance.Distance[(self.process_name,P)]['Heavy Duty Truck']
+                destination[P] = self.Distance.Distance[(self.process_name,P)]['Heavy Duty Truck'] / 1.60934 # Convert the distance from km to mile
         return(destination)
 
 ### calculating LCI and cost for different locations
@@ -192,12 +214,27 @@ class SF_Col(ProcessModel):
 
             # Number of times we need to run the collection
             n_run= max([len(self.dest[i]) for i in self.dest.keys()])
-    
+            
+            self._mean_dist_WetDry = {}
+            for w, d in [('REC', 'WetRes'), ('SSO', 'DryRes')]:
+                if len(self.dest[w]) > 0 and len(self.dest[d]) > 0:
+                    self._mean_dist_WetDry[w] =  np.mean(list(self.dest[w].values())) + np.mean(list(self.dest[d].values())) * 0.3
+                if len(self.dest[w]) > 0 and len(self.dest[d]) == 0:
+                    self._mean_dist_WetDry[w] =  np.mean(list(self.dest[w].values())) + 7
+                if len(self.dest[w]) == 0 and len(self.dest[d]) >= 0:
+                    self._mean_dist_WetDry[w] =  np.mean(list(self.dest[d].values())) + 7                     
+
             for i in range(n_run):
-                for j in self.dest.keys():
+                for j in ['RWC','SSR','DSR','MSR','MSRDO','LV','SSYW','SSYWDO','MRDO','SSYWDO','MSRDO']:
                     if len(self.dest[j]) > i:
-                        self.col['Drf'][j] =self.dest[j][list(self.dest[j].keys())[i]] #Distance btwn collection route and destination  
-                        self.col['Dfg'][j] =self.dest[j][list(self.dest[j].keys())[i]] #Distance between destination and garage
+                        self.col['Drf'][j] = self.dest[j][list(self.dest[j].keys())[i]] # Distance btwn collection route and destination  
+                        self.col['Dfg'][j] = (self.dest[j][list(self.dest[j].keys())[i]] + # Distance between destination and garage
+                                              self.col['Dgr'][j])
+
+                for j in ['SSO', 'REC']:
+                    if len(self.dest[j]) > i:
+                        self.col['Drf'][j] = self._mean_dist_WetDry[w] # Distance btwn collection route and destination  
+                        self.col['Dfg'][j] = self._mean_dist_WetDry[w] + self.col['Dgr'][j] # Distance between destination and garage
                         
                 self.calc_lci()
                 for j in self.dest.keys():

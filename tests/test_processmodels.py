@@ -85,9 +85,7 @@ def test_Reproc():
 def test_SF_Col():
     assert sp.SF_Col.Process_Type == 'Collection'
     col_scheme = sp.SF_Col.scheme()
-    col_scheme['RWC']['Contribution'] = 1
-    col_scheme['RWC']['separate_col']['SSR'] = 1
-    col_scheme['RWC']['separate_col']['SSYW'] = 1
+    col_scheme[('RWC', 'SSYW', 'SSR')] = 1
     LCA_model_helper(sp.SF_Col('SF_test', Collection_scheme=col_scheme))
 
 
