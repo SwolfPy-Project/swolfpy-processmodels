@@ -6,31 +6,31 @@ ProcessModelsMetaData['AD'] = {}
 ProcessModelsMetaData['AD']['Name'] = 'Anaerobic Digestion'
 ProcessModelsMetaData['AD']['Process_Type'] = 'Treatment'
 ProcessModelsMetaData['AD']['File'] = 'AD.py'
-ProcessModelsMetaData['AD']['InputType'] = ['SSO', 'Separated_Organics']
+ProcessModelsMetaData['AD']['InputType'] = ['Separated_Organics', 'SSO']
 
 ProcessModelsMetaData['Comp'] = {}
 ProcessModelsMetaData['Comp']['Name'] = 'Composting'
 ProcessModelsMetaData['Comp']['Process_Type'] = 'Treatment'
 ProcessModelsMetaData['Comp']['File'] = 'Comp.py'
-ProcessModelsMetaData['Comp']['InputType'] = ['SSO', 'SSYW', 'SSYWDO', 'Separated_Organics']
+ProcessModelsMetaData['Comp']['InputType'] = ['SSYW', 'SSO', 'SSYWDO', 'Separated_Organics']
 
 ProcessModelsMetaData['WTE'] = {}
 ProcessModelsMetaData['WTE']['Name'] = 'Waste To Energy'
 ProcessModelsMetaData['WTE']['Process_Type'] = 'Treatment'
 ProcessModelsMetaData['WTE']['File'] = 'WTE.py'
-ProcessModelsMetaData['WTE']['InputType'] = ['RWC', 'DryRes', 'WetRes', 'MRDO', 'Other_Residual']
+ProcessModelsMetaData['WTE']['InputType'] = ['RWC', 'MRDO', 'Other_Residual']
 
 ProcessModelsMetaData['LF'] = {}
 ProcessModelsMetaData['LF']['Name'] = 'Landfill'
 ProcessModelsMetaData['LF']['Process_Type'] = 'Treatment'
 ProcessModelsMetaData['LF']['File'] = 'LF.py'
-ProcessModelsMetaData['LF']['InputType'] = ['RWC', 'DryRes', 'WetRes', 'MRDO', 'Other_Residual', 'Bottom_Ash', 'Fly_Ash']
+ProcessModelsMetaData['LF']['InputType'] = ['RWC', 'MRDO', 'Other_Residual', 'Bottom_Ash', 'Fly_Ash']
 
 ProcessModelsMetaData['SS_MRF'] = {}
 ProcessModelsMetaData['SS_MRF']['Name'] = 'Single Stream Material Recovery Facility'
 ProcessModelsMetaData['SS_MRF']['Process_Type'] = 'Treatment'
 ProcessModelsMetaData['SS_MRF']['File'] = 'SS_MRF.py'
-ProcessModelsMetaData['SS_MRF']['InputType'] = ['SSR', 'REC']
+ProcessModelsMetaData['SS_MRF']['InputType'] = ['SSR', 'Separated_Recyclables']
 
 ProcessModelsMetaData['Reproc'] = {}
 ProcessModelsMetaData['Reproc']['Name'] = 'Reprocessing'
@@ -46,3 +46,9 @@ ProcessModelsMetaData['SF_Col']['Name'] = 'Single Family Collection'
 ProcessModelsMetaData['SF_Col']['Process_Type'] = 'Collection'
 ProcessModelsMetaData['SF_Col']['File'] = 'SF_Col.py'
 ProcessModelsMetaData['SF_Col']['InputType'] = []
+
+ProcessModelsMetaData['TS'] = {}
+ProcessModelsMetaData['TS']['Name'] = 'Transfer Station'
+ProcessModelsMetaData['TS']['Process_Type'] = 'Transfer_Station'
+ProcessModelsMetaData['TS']['File'] = 'TS.py'
+ProcessModelsMetaData['TS']['InputType'] = ['DryRes', 'WetRes', 'ORG', 'REC']
