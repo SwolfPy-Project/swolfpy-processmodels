@@ -165,9 +165,26 @@ class SS_MRF(ProcessModel):
         Electricity(self._Input,self.InputData,self.LCI)
         
         ### Capital Cost
+        Land_req =  self.InputData.Electricity['Area_rate']['amount'] * self.InputData.Constr_cost['Land_req_factor']['amount']
+        Land_cost = Land_req * self.InputData.Constr_cost['Land_rate']['amount'] / 4046.86  # 1acr = 4046.86 m2
+        Constr_cost =  Land_req * (self.InputData.Constr_cost['Paving_rate']['amount'] +
+                                   self.InputData.Constr_cost['Grading_rate']['amount']) / 10000  # 1ha = 10000m2 
+        Constr_cost += (self.InputData.Electricity['Area_rate']['amount'] * self.InputData.Constr_cost['Constr_rate']['amount'] / 0.0929)  # 1ft2 = 0.0929 m2
+        Constr_cost *= (1 + self.InputData.Constr_cost['Eng_rate']['amount'])
+        
+        # Add Miscellaneous Costs based on the average size TS: 156 tpd
+        Miscellaneous_Costs = (self.InputData.Constr_cost['Weigh_Station']['amount'] +
+                               self.InputData.Constr_cost['Utility_Connections']['amount']) / 156  # Assume capacity of 1000 tpd   
+        Miscellaneous_Costs += (self.InputData.Constr_cost['Landscaping_rate']['amount'] / 10000 * Land_req) # 1 ha = 10000m2
+        # Assumes fenc along three sides of square
+        Miscellaneous_Costs += np.sqrt(Land_req * 156) * 3 * self.InputData.Constr_cost['Fencing_Rate']['amount'] / 156
+
+        # Total capital cost
+        Unit_capital_cost = Land_cost + Constr_cost +  Miscellaneous_Costs  # $/tpd
+        Unit_capital_cost /= self.InputData.Labor['Day_year']['amount']  # $/t.yr
         capital_cost = -npf.pmt(rate=self.InputData.Constr_cost['Inerest_rate']['amount'],
                         nper=self.InputData.Constr_cost['lifetime']['amount'],
-                        pv=self.InputData.Constr_cost['Unit_capital_cost']['amount'])
+                        pv=Unit_capital_cost)
         self.LCI.add(('biosphere3', 'Capital_Cost'), capital_cost * self._Input)
 
 #%% Check Mass balance        
@@ -182,7 +199,7 @@ class SS_MRF(ProcessModel):
     def report(self):
         ### Output
         self.SS_MRF = {}
-        self.SS_MRF["process name"] = 'SS_MRF'
+        self.SS_MRF["process name"] = (self.process_name, self.Process_Type, self.__class__)
 
         # Waste
         #self.waste_DF = self.LCI_Waste.report(self._Input)
