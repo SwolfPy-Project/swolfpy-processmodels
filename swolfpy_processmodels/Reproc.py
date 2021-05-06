@@ -45,7 +45,7 @@ class Reproc(ProcessModel):
         
     def report(self):
         self.REPROC = {}
-        self.REPROC["process name"] = 'REPROC'
+        self.REPROC["process name"] = (self.process_name, self.Process_Type, self.__class__)
         self.REPROC["Biosphere"] = self.Biosphere
         self.REPROC["Technosphere"] = self.Technosphere
         self.REPROC["Waste"]= self.Waste

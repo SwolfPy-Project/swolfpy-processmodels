@@ -196,7 +196,7 @@ class WTE(ProcessModel):
         Waste = {}
         Technosphere = {}
         Biosphere = {}
-        self.WTE["process name"] = 'WTE'
+        self.WTE["process name"] = (self.process_name, self.Process_Type, self.__class__)
         self.WTE["Waste"] = Waste
         self.WTE["Technosphere"] = Technosphere
 

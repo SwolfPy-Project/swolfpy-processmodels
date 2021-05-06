@@ -382,7 +382,7 @@ class LF(ProcessModel):
         self.LF = {}
         Waste={}
         Technosphere={}
-        self.LF["process name"] = 'LF'
+        self.LF["process name"] = (self.process_name, self.Process_Type, self.__class__)
         self.LF["Waste"] = Waste
         self.LF["Technosphere"] = Technosphere
         

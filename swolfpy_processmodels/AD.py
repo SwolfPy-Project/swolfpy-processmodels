@@ -126,7 +126,7 @@ class AD(ProcessModel):
     def report(self):
 ### Output
         self.AD = {}
-        self.AD["process name"] = 'AD'
+        self.AD["process name"] = (self.process_name, self.Process_Type, self.__class__)
 
         # Set the value zero if the flow is not in the LCI dataframe.
         for i in [('Technosphere', 'Nitrogen_Fertilizer'),

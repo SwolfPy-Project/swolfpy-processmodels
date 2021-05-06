@@ -106,7 +106,7 @@ class Comp(ProcessModel):
         Waste = {}
         Technosphere = {}
         Biosphere = {}
-        self.COMP["process name"] = 'COMP'
+        self.COMP["process name"] = (self.process_name, self.Process_Type, self.__class__)
         self.COMP["Waste"] = Waste
         self.COMP["Technosphere"] = Technosphere
         self.COMP["Biosphere"] = Biosphere
