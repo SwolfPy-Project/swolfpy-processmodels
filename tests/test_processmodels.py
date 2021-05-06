@@ -35,7 +35,7 @@ def LCA_model_helper(model):
         assert Reprocessing_Index.issubset(report['Biosphere'])
         assert len(Reprocessing_Index) == len(report['Biosphere'])
 
-    else:
+    elif model.Process_Type == 'Treatment' or model.Process_Type == 'Collection':
         assert Index.issubset(report['Waste'])
         assert len(Index) == len(report['Waste'])
 
@@ -80,6 +80,11 @@ def test_SS_MRF():
 def test_Reproc():
     assert sp.Reproc.Process_Type == 'Reprocessing'
     LCA_model_helper(sp.Reproc())
+
+
+def test_TS():
+    assert sp.TS.Process_Type == 'Transfer_Station'
+    LCA_model_helper(sp.TS())
 
 
 def test_SF_Col():
