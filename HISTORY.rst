@@ -2,6 +2,13 @@
 History
 =======
 
+0.1.4 (2021-05-10)
+------------------
+
+* New Life-cyle model: TS
+* Add Cost calculations
+
+
 
 0.1.0 (2020-05-06)
 ------------------

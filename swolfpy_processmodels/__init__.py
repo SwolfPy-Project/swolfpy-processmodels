@@ -27,4 +27,4 @@ __all__ = ['ProcessModel',
            'SF_Col',
            'TS']
 
-__version__ = '0.1.3'
+__version__ = '0.1.4'

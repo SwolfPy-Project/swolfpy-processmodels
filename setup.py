@@ -49,6 +49,7 @@ setup(
     install_requires=requirements,
     license="GNU GENERAL PUBLIC LICENSE V2",
     long_description=readme + '\n\n' + history,
+    long_description_content_type= 'text/x-rst',
     include_package_data=True,
     keywords='swolfpy_processmodels',
     name='swolfpy_processmodels',
@@ -59,6 +60,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://bitbucket.org/msm_sardar/swolfpy-processmodels',
-    version='0.1.3',
+    version='0.1.4',
     zip_safe=False,
 )

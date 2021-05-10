@@ -32,7 +32,7 @@ Life-Cylce Process Models for swolfpy (swolfpy_processmodels)
   * https://go.ncsu.edu/swolfpy
   * https://jwlevis.wixsite.com/swolf
 
-|
+
 Features
 --------
 * Life-cycle process models for solid waste management (SWM) processes.
@@ -55,11 +55,13 @@ Features
      - Calculates emissions, mass flows, and resource use and recovery for anaerobic digestion process and final use of compost.
    * - Single-Stream Material Recovery facility (**SS_MRF**)
      - Calculates cost, emissions, and energy use associated with material recovery facilities.
+   * - Transfer Station (**TS**)
+     - Calculates cost, emissions, and energy use associated with Transfer Stations.
    * - Single Family Collection (**SF_Col**)
      - Calculates cost, emissions, and fossil fuel use associated with MSW collection.
 
 
-|
+
 .. Installation
 
 Installation
