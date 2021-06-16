@@ -14,6 +14,7 @@ from .SS_MRF import SS_MRF
 from .Reproc import Reproc
 from .SF_Col import SF_Col
 from .TS import TS
+from .HC import HC
 
 
 __all__ = ['ProcessModel',
@@ -25,6 +26,7 @@ __all__ = ['ProcessModel',
            'SS_MRF',
            'Reproc',
            'SF_Col',
-           'TS']
+           'TS',
+           'HC']
 
 __version__ = '0.1.4'
