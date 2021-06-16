@@ -81,24 +81,24 @@ class WTE(ProcessModel):
             # 'kg/kgww'
             self.Combustion_Emission[m] = self.Material_Properties[key1[m]].values / 100 * self.InputData.Stack_metal_emission[m]['amount'] * (1-self.Material_Properties['Moisture Content'].values/100)
 
-        
+
         ### mole content of input waste
         #'Moles per dry kg'
         self.Combustion_Emission['C_mole'] = (self.Material_Properties['Biogenic Carbon Content'].values+self.Material_Properties['Fossil Carbon Content'].values) / 100 \
                                         /self.CommonData.MW['C']['amount'] * 1000
 
-        
+
         key2 = {'Hydrogen Content':('H','H_mole'),'Oxygen Content':('O','O_mole'),'Nitrogen Content':('N','N_mole'),'Chlorine':('Cl','Cl_mole'),\
               'Sulphur':('S','S_mole')}
         for m in key2.keys():
             #'Moles per dry kg'
             self.Combustion_Emission[key2[m][1]] = self.Material_Properties[m].values / 100 /self.CommonData.MW[key2[m][0]]['amount'] * 1000
 
-        
+
         self.Combustion_Emission['alpha'] = -0.699*self.Combustion_Emission['O_mole'].values+1.5*self.Combustion_Emission['C_mole'].values+0.35*self.Combustion_Emission['H_mole'].values-0.244* \
                                         self.Combustion_Emission['Cl_mole'].values+1.5*self.Combustion_Emission['S_mole'].values+0.53*self.Combustion_Emission['N_mole'].values
 
-        
+
         #'mole/kgDryFlueGas'
         self.Combustion_Emission['Moles_per_dry_flue_gas'] = self.Combustion_Emission['O_mole'].values/2 + self.Combustion_Emission['alpha'].values*4.78-self.Combustion_Emission['H_mole'].values\
                                                         /4+5*self.Combustion_Emission['Cl_mole'].values/4+self.Combustion_Emission['N_mole'].values/2
@@ -106,7 +106,7 @@ class WTE(ProcessModel):
         #'dscm FlueGas/kgww'   #Dry Standard Cubic meter
         self.Combustion_Emission['Flue_gas'] = self.Combustion_Emission['Moles_per_dry_flue_gas'].values * self.CommonData.STP['Density_Air']['amount']/ 1000 * (1-self.Material_Properties['Moisture Content'].values/100)
 
-            
+
         key3 = {'Stack_SO2':('Sulfur_dioxide',self.CommonData.MW['SO2']['amount']),'Stack_HCl':('HCl',self.CommonData.MW['HCl']['amount']),\
               'Stack_NOx':('NOx',self.CommonData.MW['NOx']['amount']),'Stack_CO':('CO',self.CommonData.MW['CO']['amount']),\
               'Stack_Methane':('Methane',self.CommonData.MW['CH4']['amount']),'Stack_Nitrous_Oxide':('Nitrous_Oxide',self.CommonData.MW['Nitrous_Oxide']['amount']),\
@@ -120,10 +120,10 @@ class WTE(ProcessModel):
 
         #'kg/kg ww'
         self.Combustion_Emission['Stack_Dioxins_Furans'] = self.InputData.Stack_Gas_Conc_Non_metal['Dioxins_Furans']['amount']/10**12 * self.Combustion_Emission['Flue_gas'].values
-        
+
         ### Post_Combustion Solids
         self.Post_Combustion_Solids = pd.DataFrame(index = self.Index)
-        
+
         #'kg/kg ww'
         self.Post_Combustion_Solids['Total_Post_Combustion_Solids']= self.Material_Properties['Ash Content'].values/100 + (1-self.Material_Properties['Moisture Content'].values/100)* \
                                                                 self.Material_Properties['Volatile Solids'].values*(1-self.process_data['Combustion Efficiency (% of VS)'].values/100)
@@ -133,25 +133,25 @@ class WTE(ProcessModel):
 
         # 'kg/kg ww'
         self.Post_Combustion_Solids['Fly_Ash'] = self.InputData.Metals_Recovery['Fly_ash_frac']['amount'] * self.Post_Combustion_Solids['Total_Post_Combustion_Solids'].values
-        
+
         #'kg/kg ww'
         self.Post_Combustion_Solids['Ferrous_Recovery'] = self.Material_Properties['Iron'].values/100 *(1-self.Material_Properties['Moisture Content'].values/100) * self.InputData.Metals_Recovery['Fe_Rec_Rate']['amount'] \
                                                     * self.process_data['Fraction of Fe that is Recoverable'].values *(1-self.process_data['Fraction of Recoverable Fe Oxidized During Combustion'].values)
-                                                    
-        #'kg/kg ww'    
+
+        #'kg/kg ww'
         self.Post_Combustion_Solids['Aluminum_Recovery'] = self.Material_Properties['Aluminum'].values/100 *(1-self.Material_Properties['Moisture Content'].values/100) * self.InputData.Metals_Recovery['Al_Rec_Rate']['amount'] \
                                                     * self.process_data['Fraction of Al that is Recoverable'].values *(1-self.process_data['Fraction of Recoverable Al Oxidized During Combustion'].values)
-                                                    
-        
+
+
         #'kg/kg ww'
         self.Post_Combustion_Solids['Copper_Recovery'] = self.Material_Properties['Copper'].values/100 *(1-self.Material_Properties['Moisture Content'].values/100) * self.InputData.Metals_Recovery['Cu_Rec_Rate']['amount'] \
                                                     * self.process_data['Fraction of Cu that is Recoverable'].values *(1-self.process_data['Fraction of Recoverable Cu Oxidized During Combustion'].values)
 
-            
+
         #'kg/kg ww'
         self.Post_Combustion_Solids['Bottom_Ash_without_Metals'] = self.Post_Combustion_Solids['Bottom_Ash_with_Metals'].values - self.Post_Combustion_Solids['Ferrous_Recovery'].values-\
                                                                 self.Post_Combustion_Solids['Aluminum_Recovery'].values - self.Post_Combustion_Solids['Copper_Recovery'].values
-        
+
         ### metals in bottom ash and fly ash
         key4 = {"As":'Arsenic', "Ba":'Barium', "Cd":'Cadmium', "Cr":'Chromium', "Cu":'Copper', "Hg":'Mercury',\
                "Ni":'Nickel', "Pb":'Lead', "Sb":'Antimony', "Se":'Selenium', "Zn":'Zinc'}
@@ -159,7 +159,7 @@ class WTE(ProcessModel):
             #'kg/kg ww'
             self.Post_Combustion_Solids['Fly_ash_'+m] = self.Material_Properties[key4[m]].values/100 * (1-self.Material_Properties['Moisture Content'].values/100) * self.InputData.Fly_Ash_metal_emission[m]['amount']
 
-        for m in key4.keys():    
+        for m in key4.keys():
             #'kg/kg ww'
             self.Post_Combustion_Solids['Bottom_ash_'+m] = self.Material_Properties[key4[m]].values/100 * (1-self.Material_Properties['Moisture Content'].values/100) * self.InputData.Bottom_Ash_metal_emission[m]['amount']
 
@@ -184,7 +184,7 @@ class WTE(ProcessModel):
         self.InputData.setup_MC(seed)
         #self.InputData.create_uncertainty_from_inputs("WTE", self.process_data, seed)
 
-    def MC_calc(self):      
+    def MC_calc(self):
         input_list = self.InputData.gen_MC()
         #input_list2 = self.InputData.uncertainty_input_next()
         self.calc()
@@ -204,7 +204,7 @@ class WTE(ProcessModel):
             for y in self.Index:
                 x[y]={}
 
-        ### Output Waste Database       
+        ### Output Waste Database
         for y in self.Index:
             Waste[y]['Bottom_Ash'] = self.Post_Combustion_Solids['Bottom_Ash_without_Metals'][y]
 
@@ -233,9 +233,9 @@ class WTE(ProcessModel):
             Technosphere[y][('Technosphere', 'lime_hydrated_loose_weight_RoW_lime_production')] = self.APC_Consumption['lime'][y]
 
             Technosphere[y][('Technosphere', 'ammonia_liquid_RoW_ammonia_production_steam_reforming_liquid')] = self.APC_Consumption['ammonia'][y]
-    
+
             Technosphere[y][('Technosphere', 'charcoal_GLO_charcoal_production')] = self.APC_Consumption['carbon'][y]
-    
+
         ### Output Biosphere Database
         bio_rename_dict={'Stack_Ammonia':('biosphere3', '87883a4e-1e3e-4c9d-90c0-f1bea36f8014'),
               'Sb':('biosphere3', '77927dac-dea3-429d-a434-d5a71d92c4f7'),
@@ -261,7 +261,7 @@ class WTE(ProcessModel):
               'Stack_SO2':('biosphere3', 'fd7aa71c-508c-480d-81a6-8052aad92646'),
               'Zn':('biosphere3', '5ce378a0-b48d-471c-977d-79681521efde')}
 
-        # report function rename the LCI dataframe, so we use the self.LCI_index to rename LCI only one time 
+        # report function rename the LCI dataframe, so we use the self.LCI_index to rename LCI only one time
         # unless the we call the calc function
         if not self.LCI_index:
             self.Combustion_Emission=self.Combustion_Emission.rename(columns=bio_rename_dict)

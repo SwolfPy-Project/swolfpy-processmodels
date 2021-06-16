@@ -21,13 +21,13 @@ class LCI():
         self.LCI = np.zeros((len(Index),20))
         self.ColDict={}
         self.ColNumber=0
-    
+
     def add(self,name,flow):
         if name not in self.ColDict:
             self.ColDict[name]=self.ColNumber
             self.ColNumber+=1
         self.LCI[:,self.ColDict[name]]+=flow
-    
+
     def report(self,InputMass):
         LCI_normal = deepcopy(self.LCI)
         for j in range(len(self.ColDict)):
@@ -46,7 +46,7 @@ def calc_resource(total_throughput, remaining, removed, Eq, InputData, LCI):
     #Elec use = (motor_size*Frac_motor)/(max_input*frac_input)  --> unit: kW/Mg
     elec = Eq['motor']['amount'] * Eq['frac_motor']['amount']/ \
                 (Eq['Max_input']['amount']*Eq['frac_MaxInput']['amount'])
-    
+
     if Eq['Calc_base']['amount']==0: # 0: calculation based on the removed mass
         Aloc = (removed/sum(removed) if sum(removed)>0 else 0)
     elif Eq['Calc_base']['amount']==1: # 1: calculation based on the remaining mass
@@ -54,12 +54,12 @@ def calc_resource(total_throughput, remaining, removed, Eq, InputData, LCI):
     elif Eq['Calc_base']['amount']==2:  # 2: calculation based on the total throughput mass
         Aloc = (total_throughput/sum(total_throughput) if sum(total_throughput)>0 else 0)
     else:
-        raise ValueError('Input parameter [Calc_base] is not valid')   
-    
+        raise ValueError('Input parameter [Calc_base] is not valid')
+
     elec_use =  sum(total_throughput) * elec *  Aloc
     dsl_use = sum(total_throughput) * Eq['diesel_use']['amount'] * Aloc
     LPG_use = sum(total_throughput) * Eq['LPG_use']['amount'] * Aloc
-    
+
     Cap = Eq['Investment_cost']['amount'] + Eq['Installation_cost']['amount']
     Rate = InputData.Constr_cost['Inerest_rate']['amount']
     Lftime = Eq['LifeTime']['amount']
@@ -84,12 +84,12 @@ def calc_resource(total_throughput, remaining, removed, Eq, InputData, LCI):
     LCI.add(('biosphere3', 'Operational_Cost'), TotalOMcost)
 
 ### Rolling_Stock
-def Rolling_Stock(Input,InputData,LCI):    
+def Rolling_Stock(Input,InputData,LCI):
     #Equipment input
     Eq=InputData.Eq_Rolling_Stock
     #Resource use calculation
     calc_resource(Input,Input,Input,Eq,InputData,LCI)
-    return(None)    
+    return(None)
 
 
 ### General Electricity
@@ -99,7 +99,7 @@ def Electricity(Input, InputData, LCI):
                    InputData.Electricity['Area_rate']['amount'] *
                    InputData.Electricity['Frac_office']['amount'] *
                    InputData.Electricity['Elec_office']['amount'])
-    elec_floor = (Input * 
+    elec_floor = (Input *
                   InputData.Electricity['Area_rate']['amount'] *
                   (1 - InputData.Electricity['Frac_office']['amount']) *
                   InputData.Electricity['Elec_floor']['amount'])

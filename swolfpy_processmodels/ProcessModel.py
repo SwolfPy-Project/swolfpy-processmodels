@@ -4,7 +4,7 @@ Created on Tue Apr 21 21:31:49 2020
 
 @author: msmsa
 """
-from abc import ABC, abstractmethod 
+from abc import ABC, abstractmethod
 import pandas as pd
 from swolfpy_inputdata import CommonData
 
@@ -15,7 +15,7 @@ class ProcessModel(ABC):
         else:
             self.CommonData = CommonData()
         self.process_name = process_name
-            
+
         ### Read Material properties
         self.Material_Properties=self.CommonData.Material_Properties
 
@@ -30,15 +30,15 @@ class ProcessModel(ABC):
     @abstractmethod
     def calc(self):
         pass
-    
+
     @abstractmethod
     def setup_MC(self,seed=None):
         pass
-    
+
     @abstractmethod
     def MC_calc(self):
         pass
-    
+
     @abstractmethod
     def report(self):
         pass
