@@ -40,7 +40,7 @@ ProcessModelsMetaData['Reproc']['InputType'] = ['Al','Fe',
                                                 'OCC', 'Mixed_Paper', 'ONP', 'OFF', 'Fiber_Other',
                                                 'Brown_glass', 'Clear_glass', 'Green_glass', 'Mixed_Glass',
                                                 'PET', 'HDPE_P', 'HDPE_T', 'LDPE_Film']
-                                               
+
 ProcessModelsMetaData['SF_Col'] = {}
 ProcessModelsMetaData['SF_Col']['Name'] = 'Single Family Collection'
 ProcessModelsMetaData['SF_Col']['Process_Type'] = 'Collection'
@@ -52,3 +52,9 @@ ProcessModelsMetaData['TS']['Name'] = 'Transfer Station'
 ProcessModelsMetaData['TS']['Process_Type'] = 'Transfer_Station'
 ProcessModelsMetaData['TS']['File'] = 'TS.py'
 ProcessModelsMetaData['TS']['InputType'] = ['DryRes', 'WetRes', 'ORG', 'REC']
+
+ProcessModelsMetaData['HC'] = {}
+ProcessModelsMetaData['HC']['Process_Type'] = 'Treatment'
+ProcessModelsMetaData['HC']['Name'] = 'Home Composting'
+ProcessModelsMetaData['HC']['File'] = 'HC.py'
+ProcessModelsMetaData['HC']['InputType'] = ['SSO_HC']
