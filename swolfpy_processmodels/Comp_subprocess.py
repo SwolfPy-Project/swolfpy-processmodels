@@ -120,8 +120,9 @@ def ac_comp(input_flow, common_data, process_data, input_data, assumed_comp, lci
 
     # Caculating the moisture
     input_flow.update(assumed_comp)
-    water_after_ac = sum(product.data['sol_cont'].values * assumed_comp.values) * input_data.Deg_Param['MCac']['amount'] / (1-input_data.Deg_Param['MCac']['amount'])
-    product.data['moist_cont'] = water_after_ac * input_flow.data['moist_cont'].values/input_flow.water
+    product.data['moist_cont'] = (product.data['sol_cont'].values
+                                  / (1-input_data.Deg_Param['MCac']['amount'])
+                                  * input_data.Deg_Param['MCac']['amount'])
     product.data['mass']= product.data['sol_cont'].values + product.data['moist_cont'].values
 
     # Resource use
@@ -240,8 +241,9 @@ def curing(input_flow, common_data, process_data, input_data, assumed_comp, lci,
 
     # Caculating the moisture
     input_flow.update(assumed_comp)
-    water_after_cu = sum(product.data['sol_cont'].values * assumed_comp.values) * input_data.Deg_Param['MCcu']['amount'] / (1-input_data.Deg_Param['MCcu']['amount'])
-    product.data['moist_cont'] = water_after_cu * input_flow.data['moist_cont'].values/input_flow.water
+    product.data['moist_cont'] = (product.data['sol_cont'].values
+                                  / (1-input_data.Deg_Param['MCcu']['amount'])
+                                  * input_data.Deg_Param['MCcu']['amount'])
     product.data['mass']= product.data['sol_cont'].values + product.data['moist_cont'].values
 
     # Resource use

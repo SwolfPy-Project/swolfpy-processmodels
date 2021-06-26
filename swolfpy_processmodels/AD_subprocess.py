@@ -187,23 +187,35 @@ def Reactor(input_flow, CommonData, process_data, input_data, Material_Propertie
 
 
 ### AD Dewater
-def Dewater(input_flow, CommonData, process_data, input_data, Material_Properties, added_water, assumed_comp, lci, flow_init):
+def Dewater(input_flow, input_to_reactor, CommonData, process_data, input_data, Material_Properties,
+            added_water, assumed_comp, lci, flow_init):
     if input_data.AD_operation['isDw']['amount'] == 1:
         # Calculating water removed
+        """
+        M: Moisture, S: solids, Liq: removed water, mc=moisture content
+        mc = (M - Liq)/(S + M - Liq)
+        -mc*Liq = M -Liq - S*mc - mc*M
+        Liq = (M - S*mc - mc*M)/(1-mc)
+        S + M = mass ==> Liq = (M - mass*mc)/(1-mc)
+        """
         liq_rem = ((input_flow.data['moist_cont'].values
-                    - input_data.Dewater['ad_mcDigestate']['amount']
-                    * input_flow.data['mass'].values)
+                    - input_flow.data['mass'].values
+                    * input_data.Dewater['ad_mcDigestate']['amount'])
                    / (1 - input_data.Dewater['ad_mcDigestate']['amount']))
 
-        # Maximum water recirculate
-        Recirculate_water_max = sum(added_water * assumed_comp) * input_data.AD_operation['recircMax']['amount']
+        # Liquid to reatment, recirculate water
+        total_liq_to_treatment = (liq_rem
+                                  * (1 - input_data.AD_operation['recircMax']['amount']))
 
-        # Liquid to reatment, new water, recirculate watersum(liq_rem * assumed_co
-        total_liq_to_treatment = max(sum(liq_rem * assumed_comp) - Recirculate_water_max, 0)
-        liq_treatment_mass = total_liq_to_treatment * liq_rem / sum(liq_rem * assumed_comp)
-        liq_treatment_vol = liq_treatment_mass / 1000 / input_data.Dig_prop['digliqdens']['amount']
-        # Recirulate_water_mass = (sum(liq_rem * assumed_comp) - total_liq_to_treatment) * liq_rem / sum(liq_rem * assumed_comp)
-        # New_water_mass = (sum(added_water * assumed_comp) - (sum(liq_rem * assumed_comp) - total_liq_to_treatment)) * liq_rem / sum(liq_rem * assumed_comp)
+        liq_treatment_vol = (total_liq_to_treatment / 1000
+                             / input_data.Dig_prop['digliqdens']['amount'])
+        """
+        Assumption: All the nutrients remains in the waste water flow to WWT.
+        The assumed composition is used to calculate the fraction of incoming
+        water that is removed.
+        """
+        remv_to_incom = (sum(liq_rem * assumed_comp)
+                         / sum(input_flow.data['moist_cont'] * assumed_comp))
 
         # Product
         product = deepcopy(flow_init)
@@ -213,23 +225,180 @@ def Dewater(input_flow, CommonData, process_data, input_data, Material_Propertie
         product.data['moist_cont'] = input_flow.data['moist_cont'].values - liq_rem
         product.data['mass'] = product.data['moist_cont'].values + product.data['sol_cont'].values
         product.data['C_cont']= input_flow.data['C_cont'].values
-        product.data['N_cont'] = (input_flow.data['N_cont'].values
-                                  * (1 - liq_rem / input_flow.data['moist_cont'].values 
-                                     * (100 - input_data.Dig_prop['perNSolid']['amount']) / 100 ))
-    
-        product.data['P_cont'] = input_flow.data['P_cont'].values * (1 - liq_rem / input_flow.data['moist_cont'].values * (100 - input_data.Dig_prop['perPSolid']['amount']) / 100 )
-        product.data['K_cont'] = input_flow.data['K_cont'].values * (1 - liq_rem / input_flow.data['moist_cont'].values * (100 - input_data.Dig_prop['perKSolid']['amount']) / 100 )
+
+        product.data['N_cont'] = ((input_flow.data['N_cont'].values
+                                   * input_data.Dig_prop['perNSolid']['amount'] / 100)
+                                  + (input_flow.data['N_cont'].values
+                                     * (1 - input_data.Dig_prop['perNSolid']['amount'] / 100)
+                                     * (1 - remv_to_incom)))
+
+        product.data['P_cont'] = ((input_flow.data['P_cont'].values
+                                   * input_data.Dig_prop['perPSolid']['amount'] / 100)
+                                  + (input_flow.data['P_cont'].values
+                                     * (1 - input_data.Dig_prop['perPSolid']['amount'] / 100)
+                                     * (1 - remv_to_incom)))
+
+        product.data['K_cont'] = ((input_flow.data['K_cont'].values
+                                   * input_data.Dig_prop['perKSolid']['amount'] / 100)
+                                  + (input_flow.data['K_cont'].values
+                                     * (1 - input_data.Dig_prop['perKSolid']['amount'] / 100)
+                                     * (1 - remv_to_incom)))
 
         # Resource use
         Electricity = input_data.Dewater['elec_dw']['amount'] * input_flow.data['sol_cont'].values / 1000
         lci.add(name=('Technosphere', 'Electricity_consumption'), flow=Electricity)
 
-        return product,liq_rem, liq_treatment_vol
+        # POTW
+        solid_content = 1 - Material_Properties['Moisture Content'].values / 100
+        # Allocation factor
+        """
+        AF_total: total emission(Mg) * volume of waste water(m3)
+        """
+        AF_total = {}
+        AF_total['COD'] = sum(solid_content
+                              * Material_Properties['Biogenic Carbon Content'].values / 100
+                              * assumed_comp
+                              * liq_treatment_vol)
 
-    if input_data.AD_operation['isDw']['amount'] != 1:
-        # Product
-        product = deepcopy(flow_init)
-        product.data = input_flow.data * 1
+        AF_total['BOD'] = sum(solid_content
+                              * Material_Properties['Methane Yield'].values
+                              * assumed_comp
+                              * liq_treatment_vol)
+
+        AF_total['TSS'] = sum(assumed_comp * liq_treatment_vol)
+
+        AF_total['Total_N'] = sum(input_to_reactor.data['N_cont'].values
+                                  * assumed_comp
+                                  * liq_treatment_vol)
+
+        AF_total['Phosphate'] = sum(input_to_reactor.data['P_cont'].values
+                                    * assumed_comp
+                                    * liq_treatment_vol)
+
+        for i in ['Iron', 'Copper', 'Cadmium', 'Arsenic', 'Mercury', 'Selenium',
+                  'Chromium', 'Lead', 'Zinc', 'Barium', 'Silver']:
+            AF_total[i] = sum(solid_content
+                              * Material_Properties[i].values / 100
+                              * assumed_comp
+                              * liq_treatment_vol)
+
+        AF = {}
+        AF['COD'] = (solid_content
+                     * Material_Properties['Biogenic Carbon Content'].values / 100
+                     * liq_treatment_vol / AF_total['COD'])
+
+        AF['BOD'] = (solid_content
+                     * Material_Properties['Methane Yield'].values
+                     * liq_treatment_vol / AF_total['BOD'])
+
+        AF['TSS'] = liq_treatment_vol / AF_total['TSS']
+
+        AF['Total_N'] = (input_to_reactor.data['N_cont'].values
+                         * liq_treatment_vol / AF_total['Total_N'])
+
+        AF['Phosphate'] = (solid_content
+                           * Material_Properties['Phosphorus Content'].values / 100
+                           * liq_treatment_vol / AF_total['Phosphate'])
+
+        for i in ['Iron', 'Copper', 'Cadmium', 'Arsenic', 'Mercury', 'Selenium',
+                  'Chromium', 'Lead', 'Zinc', 'Barium', 'Silver']:
+            if AF_total[i] == 0:
+                AF[i]=0
+            else:
+                AF[i] = (solid_content
+                         * Material_Properties[i].values/100
+                         * liq_treatment_vol / AF_total[i])
+
+        # Emission from POTW
+        Emission={}
+
+        Emission['Total_N'] =  (input_to_reactor.data['N_cont'].values
+                                * (1 - input_data.Dig_prop['perNSolid']['amount'] / 100)
+                                * remv_to_incom
+                                * (1-CommonData.WWT['n_rem']['amount']/100))
+
+        Emission['Phosphate'] = (input_to_reactor.data['P_cont'].values
+                                 * (1 - input_data.Dig_prop['perPSolid']['amount'] / 100)
+                                 * remv_to_incom
+                                 *(94.97/30.97)
+                                 * (1 - CommonData.WWT['p_rem']['amount'] /100))
+
+        for i,j,k in [('COD','lchCODcont','cod_rem'),('BOD','lchBODcont','bod_rem'),('TSS','lchTSScont','tss_rem')\
+                      ,('Iron','conc_Fe','metals_rem'),('Copper','conc_Cu','metals_rem'),('Cadmium','conc_Cd','metals_rem')\
+                      ,('Arsenic','conc_As','metals_rem'),('Mercury','conc_Hg','metals_rem'),('Selenium','conc_Se','metals_rem')\
+                      ,('Chromium','conc_Cr','metals_rem'),('Lead','conc_Pb','metals_rem'),('Zinc','conc_Zn','metals_rem')\
+                      ,('Barium','conc_Ba','metals_rem'),('Silver','conc_Ag','metals_rem')]:
+            Emission[i] = (input_data.Digestate_treatment[j]['amount']
+                           * liq_treatment_vol
+                           * (1 - CommonData.WWT[k]['amount'] / 100)
+                           * AF[i])
+
+        for i,j in [('COD','COD'),('BOD','BOD'),('TSS','Total suspended solids')\
+                      ,('Iron','Iron'),('Copper','Copper'),('Cadmium','Cadmium')\
+                      ,('Arsenic','Arsenic'),('Mercury','Mercury'),('Phosphate','Phosphate'),('Selenium','Selenium')\
+                      ,('Chromium','Chromium'),('Lead','Lead'),('Zinc','Zinc')\
+                      ,('Barium','Barium'),('Silver','Silver'),('Total_N','Total N')]:
+            lci.add(name=j, flow=Emission[i])
+
+
+        BOD_removed = (input_data.Digestate_treatment['lchBODcont']['amount']
+                       * AF['BOD'] * liq_treatment_vol
+                       * CommonData.WWT['bod_rem']['amount'] / 100)
+
+        lci.add(name='CO2-biogenic emissions from digested liquids treatment',
+                flow=(BOD_removed
+                      * CommonData.Leachate_treat['co2bod']['amount']))
+
+        # Sludge to LF
+        sludge_prod = liq_treatment_vol * CommonData.Leachate_treat['sludgef']['amount'] # Unit kg
+
+        # Resouce use
+        lci.add(name=('Technosphere', 'Internal_Process_Transportation_Heavy_Duty_Diesel_Truck'),
+                flow=(input_data.Digestate_treatment['ad_distPOTW']['amount']
+                      * liq_treatment_vol * 1000
+                      * input_data.Dig_prop['digliqdens']['amount']))
+
+        lci.add(name=('Technosphere', 'Empty_Return_Heavy_Duty_Diesel_Truck'),
+                flow=(liq_treatment_vol
+                      * input_data.Dig_prop['digliqdens']['amount']
+                      / input_data.Digestate_treatment['payload_POTW']['amount']
+                      * input_data.Digestate_treatment['ad_distPOTW']['amount']
+                      * input_data.Digestate_treatment['ad_erPOTW']['amount']))
+
+        lci.add(name=('Technosphere', 'Internal_Process_Transportation_Heavy_Duty_Diesel_Truck'),
+                flow=(input_data.Digestate_treatment['wwtp_lf_dist']['amount']
+                      * sludge_prod))
+
+        lci.add(name=('Technosphere', 'Empty_Return_Heavy_Duty_Diesel_Truck'),
+                flow=(input_data.Digestate_treatment['wwtp_lf_dist']['amount']
+                      * sludge_prod / 1000
+                      / input_data.Digestate_treatment['payload_LFPOTW']['amount']
+                      * input_data.Digestate_treatment['er_wwtpLF']['amount']))
+
+        lci.add(name=('Technosphere', 'Electricity_consumption'),
+                flow=(BOD_removed
+                      * CommonData.Leachate_treat['elecBOD']['amount']))
+
+    else:
+        product = deepcopy(input_flow)
+        liq_rem = np.zeros_like(input_flow.data.index)
+        liq_treatment_vol = np.zeros_like(input_flow.data.index)
+        # add zero flows to LCI as placeholder
+        for i,j in [('COD' ,'COD'), ('BOD', 'BOD'), ('TSS', 'Total suspended solids'),
+                    ('Iron', 'Iron'), ('Copper', 'Copper'), ('Cadmium', 'Cadmium'),
+                    ('Arsenic', 'Arsenic'), ('Mercury', 'Mercury'), ('Phosphate', 'Phosphate'),
+                    ('Selenium', 'Selenium'), ('Chromium', 'Chromium'),
+                    ('Lead', 'Lead'), ('Zinc', 'Zinc'), ('Barium', 'Barium'),
+                    ('Silver', 'Silver'), ('Total_N', 'Total N')]:
+            lci.add(name=j, flow=0)
+        lci.add(name='CO2-biogenic emissions from digested liquids treatment', flow=0)
+        lci.add(name=('Technosphere', 'Internal_Process_Transportation_Heavy_Duty_Diesel_Truck'),
+                flow=0)
+        lci.add(name=('Technosphere', 'Empty_Return_Heavy_Duty_Diesel_Truck'), flow=0)
+        lci.add(name=('Technosphere', 'Internal_Process_Transportation_Heavy_Duty_Diesel_Truck'), flow=0)
+        lci.add(name=('Technosphere', 'Electricity_consumption'), flow=0)
+
+    return product, liq_rem, liq_treatment_vol
 
 
 ### AD_Mixing two flows
@@ -261,7 +430,7 @@ def mix(input1, input2, Material_Properties, flow_init):
     product.data['P_cont'] = (input1.data['P_cont'].values
                               + input2.data['sol_cont'].values
                               * Material_Properties['Phosphorus Content'].values / 100)
-    
+
     product.data['K_cont'] = (input1.data['K_cont'].values
                               + input2.data['sol_cont'].values
                               * Material_Properties['Potassium Content'].values / 100)
@@ -272,12 +441,11 @@ def curing(input_flow, input_to_reactor, CommonData, process_data, input_data, a
         if input_data.AD_operation['isCured']['amount'] == 1:
             input_flow.update(assumed_comp)
             # Calculate wood chips\screen rejects for moisture control
-            Tot_WoodChips = (input_flow.water - input_data.Dig_prop['mcInitComp']['amount'] * input_flow.flow)\
-                / (input_data.Dig_prop['mcInitComp']['amount'] - input_data.Material_Properties['wcMC']['amount'])
-
-            WC_SR = Tot_WoodChips * input_flow.data['moist_cont'].values / input_flow.water
-            WC_SR_Water = WC_SR * input_data.Material_Properties['wcMC']['amount']
-            WC_SR_solid = WC_SR - WC_SR_Water
+            WC_SR = ((input_flow.data['moist_cont']
+                      - input_data.Dig_prop['mcInitComp']['amount']
+                      * input_flow.flow)
+                     / (input_data.Dig_prop['mcInitComp']['amount']
+                        - input_data.Material_Properties['wcMC']['amount']))
 
             # Carbon balance
             C_Remain = np.where(input_flow.data['C_cont'].values / input_to_reactor.data['C_cont'].apply(lambda x: 1 if x <= 0 else x ).values
@@ -321,23 +489,33 @@ def curing(input_flow, input_to_reactor, CommonData, process_data, input_data, a
             product.data['P_cont'] = input_flow.data['P_cont'].values
             product.data['K_cont'] = input_flow.data['K_cont'].values
 
-            # Water
-            Water_curing = (WC_SR_Water - input_data.Material_Properties['ad_mcFC']['amount'] * (WC_SR_Water + WC_SR_solid + product.data['sol_cont'].values))\
-                /(input_data.Material_Properties['ad_mcFC']['amount'] - 1)
-
             # Product
-            product.data['moist_cont'] = Water_curing
+            product.data['moist_cont'] = (product.data['sol_cont'].values
+                                          / (1 - input_data.Material_Properties['ad_mcFC']['amount'])
+                                          * input_data.Material_Properties['ad_mcFC']['amount'])
+
             product.data['mass'] = product.data['moist_cont'].values + product.data['sol_cont'].values
 
             # Resource use
-            loder_dsl = input_flow.data['mass'].values / 1000 * input_data.Loader['hpFEL']['amount'] * input_data.Loader['mfFEL']['amount'] * input_data.AD_operation['ophrsperday']['amount']
-            WC_shred_dsl = input_data.shredding['Mtgp']['amount'] * input_data.shredding['Mtgf']['amount'] * WC_SR / 1000
-            Windrow_turner_dsl = (WC_SR + input_flow.data['mass'].values) / 1000 * input_data.Windrow_turn['Tcur']['amount'] * input_data.Windrow_turn['Mwta']['amount']\
-                * input_data.Windrow_turn['turnFreq']['amount'] * input_data.Windrow_turn['Mwfa']['amount']
+            loder_dsl = (input_flow.data['mass'].values / 1000
+                         * input_data.Loader['hpFEL']['amount']
+                         * input_data.Loader['mfFEL']['amount']
+                         * input_data.AD_operation['ophrsperday']['amount'])
 
-            lci.add(name=('Technosphere', 'Equipment_Diesel'), flow=loder_dsl)
-            lci.add(name=('Technosphere', 'Equipment_Diesel'), flow=WC_shred_dsl)
-            lci.add(name=('Technosphere', 'Equipment_Diesel'), flow=Windrow_turner_dsl)
+            WC_shred_dsl = (input_data.shredding['Mtgp']['amount']
+                            * input_data.shredding['Mtgf']['amount']
+                            * WC_SR / 1000)
+
+            Windrow_turner_dsl = ((WC_SR + input_flow.data['mass'].values) / 1000
+                                  * input_data.Windrow_turn['Tcur']['amount']
+                                  * input_data.Windrow_turn['Mwta']['amount']
+                                  * input_data.Windrow_turn['turnFreq']['amount']
+                                  * input_data.Windrow_turn['Mwfa']['amount'])
+
+            lci.add(name=('Technosphere', 'Equipment_Diesel'),
+                    flow=(loder_dsl
+                          + WC_shred_dsl
+                          + Windrow_turner_dsl))
 
         return product, WC_SR
 
@@ -346,97 +524,14 @@ def Post_screen(input_flow, input_WC_SR, input_data, assumed_comp, Material_Prop
     product = deepcopy(flow_init)
 
     Screen_rejects = input_WC_SR * input_data.Post_Screen['ad_scrEff_WC']['amount']
-
     Remain_WC = input_WC_SR - Screen_rejects
-    Remain_WC_water = Remain_WC * input_data.Material_Properties['wcMC']['amount']
-    Remain_WC_solid = Remain_WC - Remain_WC_water
-    Remain_WC_VS = Remain_WC_solid * input_data.Material_Properties['wcVSC']['amount']
-    Remain_WC_Ash = Remain_WC_solid - Remain_WC_VS
 
     # Product
-    product = deepcopy(flow_init)
-    product.data['vs_cont'] = input_flow.data['vs_cont'].values +  Remain_WC_VS
-    product.data['ash_cont'] = input_flow.data['ash_cont'].values + Remain_WC_Ash
-    product.data['sol_cont'] = input_flow.data['sol_cont'].values + Remain_WC_solid
-    product.data['moist_cont'] = input_flow.data['moist_cont'].values + Remain_WC_water
-    product.data['mass'] = product.data['moist_cont'].values + product.data['sol_cont'].values
-    product.data['C_cont'] = input_flow.data['C_cont'].values # Does not culculate the carbon in the WC
-    product.data['N_cont'] = input_flow.data['N_cont'].values
-    product.data['P_cont'] = input_flow.data['P_cont'].values
-    product.data['K_cont'] = input_flow.data['K_cont'].values
+    product = deepcopy(input_flow)
 
     # Resource use
-    Electricity = input_data.Post_Screen['ad_engScreen']['amount'] * (input_flow.data['mass'].values + input_WC_SR)
-    lci.add(name=('Technosphere', 'Electricity_consumption'), flow=Electricity)
-    return product, Screen_rejects
-
-
-def POTW (liq_treatment_vol, liq_rem, input_to_reactor, Dig_to_Curing, FinalCompost, index,input_data, assumed_comp, Material_Properties, CommonData, lci):
-    # Allocation factor
-    AF_total = {}
-    AF_total['COD'] = sum((1 - Material_Properties['Moisture Content'].values / 100) * assumed_comp * liq_treatment_vol * Material_Properties['Biogenic Carbon Content'].values / 100 * 1000)
-    AF_total['BOD'] = sum((1 - Material_Properties['Moisture Content'].values / 100) * assumed_comp * liq_treatment_vol * Material_Properties['Methane Yield'].values)
-    AF_total['TSS'] = sum(assumed_comp * liq_treatment_vol)
-    AF_total['Total_N'] = sum(input_to_reactor.data['N_cont'].values * assumed_comp * FinalCompost.data['mass'].values/input_data.Material_Properties['densFC']['amount'] )
-    AF_total['Phosphate'] = sum((1 - Material_Properties['Moisture Content'].values / 100) * assumed_comp * FinalCompost.data['mass'].values
-                                / input_data.Material_Properties['densFC']['amount'] * Material_Properties['Phosphorus Content'].values / 100 * 1000)
-
-    for i in ['Iron','Copper','Cadmium','Arsenic','Mercury','Selenium','Chromium','Lead','Zinc','Barium','Silver']:
-        AF_total[i] = sum((1-Material_Properties['Moisture Content'].values/100) * assumed_comp * FinalCompost.data['mass'].values/input_data.Material_Properties['densFC']['amount'] * Material_Properties[i].values/100 *1000)
-
-
-    AF={}
-    AF['COD'] = (1-Material_Properties['Moisture Content'].values/100) * liq_treatment_vol * Material_Properties['Biogenic Carbon Content'].values/100 * 1000 / AF_total['COD']
-    AF['BOD'] = (1-Material_Properties['Moisture Content'].values/100) * liq_treatment_vol * Material_Properties['Methane Yield'].values / AF_total['BOD']
-    AF['TSS'] = liq_treatment_vol/AF_total['TSS']
-    AF['Total_N'] = input_to_reactor.data['N_cont'].values * FinalCompost.data['mass'].values/input_data.Material_Properties['densFC']['amount']/AF_total['Total_N']
-    AF['Phosphate'] = (1-Material_Properties['Moisture Content'].values/100) * FinalCompost.data['mass'].values/input_data.Material_Properties['densFC']['amount'] * Material_Properties['Phosphorus Content'].values/100 * 1000 / AF_total['Phosphate']
-
-    for i in ['Iron','Copper','Cadmium','Arsenic','Mercury','Selenium','Chromium','Lead','Zinc','Barium','Silver']:
-        if AF_total[i] == 0:
-            AF[i]=0
-        else:
-            AF[i] = (1-Material_Properties['Moisture Content'].values/100) * FinalCompost.data['mass'].values/input_data.Material_Properties['densFC']['amount'] * Material_Properties[i].values/100 * 1000 / AF_total[i]
-
-    #Emission from POTW
-    Emission={}
-    Emission['Total_N'] =  input_to_reactor.data['N_cont'].values * (100-input_data.Dig_prop['perNSolid']['amount'])/100 * liq_rem/(Dig_to_Curing.data['moist_cont'].values+liq_rem) * (1-CommonData.WWT['n_rem']['amount']/100)
-    Emission['Phosphate'] = input_to_reactor.data['sol_cont'].values * Material_Properties['Phosphorus Content'].values/100 * (100-input_data.Dig_prop['perPSolid']['amount'])/100 * liq_rem/(Dig_to_Curing.data['moist_cont'].values+liq_rem) *(94.97/30.97) * (1-CommonData.WWT['p_rem']['amount']/100)
-
-    for i,j,k in [('COD','lchCODcont','cod_rem'),('BOD','lchBODcont','bod_rem'),('TSS','lchTSScont','tss_rem')\
-                  ,('Iron','conc_Fe','metals_rem'),('Copper','conc_Cu','metals_rem'),('Cadmium','conc_Cd','metals_rem')\
-                  ,('Arsenic','conc_As','metals_rem'),('Mercury','conc_Hg','metals_rem'),('Selenium','conc_Se','metals_rem')\
-                  ,('Chromium','conc_Cr','metals_rem'),('Lead','conc_Pb','metals_rem'),('Zinc','conc_Zn','metals_rem')\
-                  ,('Barium','conc_Ba','metals_rem'),('Silver','conc_Ag','metals_rem')]:
-        Emission[i] = input_data.Digestate_treatment[j]['amount'] * AF[i] * liq_treatment_vol * (1-CommonData.WWT[k]['amount']/100)
-
-    for i,j in [('COD','COD'),('BOD','BOD'),('TSS','Total suspended solids')\
-                  ,('Iron','Iron'),('Copper','Copper'),('Cadmium','Cadmium')\
-                  ,('Arsenic','Arsenic'),('Mercury','Mercury'),('Phosphate','Phosphate'),('Selenium','Selenium')\
-                  ,('Chromium','Chromium'),('Lead','Lead'),('Zinc','Zinc')\
-                  ,('Barium','Barium'),('Silver','Silver'),('Total_N','Total N')]:
-        lci.add(name=j, flow=Emission[i])
-
-
-    BOD_removed = input_data.Digestate_treatment['lchBODcont']['amount'] * AF['BOD'] * liq_treatment_vol * CommonData.WWT['bod_rem']['amount']/100
-    lci.add(name='CO2-biogenic emissions from digested liquids treatment',
-            flow=BOD_removed * CommonData.Leachate_treat['co2bod']['amount'])
-
-    #Sludge to LF
-    sludge_prod = liq_treatment_vol * CommonData.Leachate_treat['sludgef']['amount'] # Unit kg
-
-    #Resouce use
-    lci.add(name=('Technosphere', 'Internal_Process_Transportation_Heavy_Duty_Diesel_Truck'),
-            flow=input_data.Digestate_treatment['ad_distPOTW']['amount'] * liq_treatment_vol * 1000 * input_data.Dig_prop['digliqdens']['amount'])
-    lci.add(name=('Technosphere', 'Empty_Return_Heavy_Duty_Diesel_Truck'),
-            flow=liq_treatment_vol * input_data.Dig_prop['digliqdens']['amount'] / input_data.Digestate_treatment['payload_POTW']['amount']\
-                * input_data.Digestate_treatment['ad_distPOTW']['amount'] * input_data.Digestate_treatment['ad_erPOTW']['amount'])
-
-    lci.add(name='Full_Total heavy duty truck tranport',
-            flow=input_data.Digestate_treatment['wwtp_lf_dist']['amount'] * sludge_prod)
-    lci.add(name=('Technosphere', 'Empty_Return_Heavy_Duty_Diesel_Truck'),
-            flow=input_data.Digestate_treatment['wwtp_lf_dist']['amount'] * sludge_prod /1000\
-            /input_data.Digestate_treatment['payload_LFPOTW']['amount'] * input_data.Digestate_treatment['er_wwtpLF']['amount'])
-
+    Electricity = (input_data.Post_Screen['ad_engScreen']['amount']
+                   * (input_flow.data['mass'].values + input_WC_SR))
     lci.add(name=('Technosphere', 'Electricity_consumption'),
-            flow=BOD_removed * CommonData.Leachate_treat['elecBOD']['amount'])
+            flow=Electricity)
+    return product, Remain_WC, Screen_rejects

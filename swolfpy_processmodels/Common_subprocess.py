@@ -40,6 +40,9 @@ class LCI():
         flow : ``numpy.array``.
 
         """
+        if isinstance(flow, np.ndarray):
+            if any(np.isnan(flow)):
+                raise ValueError(f'The Value for the {name} is nan!')
         if name not in self.col_dict:
             self.col_dict[name] = self.col_index
             self.col_index += 1

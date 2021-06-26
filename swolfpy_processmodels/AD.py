@@ -9,7 +9,7 @@ from swolfpy_inputdata import AD_Input
 from .Common_subprocess import Flow, LCI
 from .Common_subprocess import compost_use
 from .AD_subprocess import screen, Post_screen, mix, curing
-from .AD_subprocess import add_water, Reactor, Dewater, POTW
+from .AD_subprocess import add_water, Reactor, Dewater
 import numpy_financial as npf
 import plotly.graph_objects as go
 from plotly.offline import plot
@@ -60,6 +60,14 @@ class AD(ProcessModel):
                            * self.InputData.shredding['Mtgf']['amount']))
 
         ### Adding Water
+        """
+        M: Moisture, S: solids, Liq: Added water, mc=moisture content
+        mc = (Liq + M)/(S + M + Liq)
+        mc*Liq = Liq + M - S*mc - mc*M
+        Liq = (M - S*mc - mc*M)/(mc-1)
+        S + M = mass ==> Liq = (M - mass*mc)/(mc-1)
+        Liq = (mass*mc - M)/(1-mc)
+        """
         self.water_flow = ((self.S1_unders.data['mass'].values
                             * self.InputData.Material_Properties['ad_mcReactor']['amount']
                             - self.S1_unders.data['moist_cont'].values)
@@ -76,7 +84,7 @@ class AD(ProcessModel):
                                  self.LCI, self.flow_init)
 
         ### Dewatering
-        self.Dig_to_Curing_1, self.liq_rem, self.liq_treatment_vol = Dewater(self.digestate, self.CommonData, self.process_data, self.InputData,
+        self.Dig_to_Curing_1, self.liq_rem, self.liq_treatment_vol = Dewater(self.digestate, self.to_reactor, self.CommonData, self.process_data, self.InputData,
                                                                              self.Material_Properties, self.water_flow, self.Assumed_Comp.values,
                                                                              self.LCI, self.flow_init)
 
@@ -89,12 +97,8 @@ class AD(ProcessModel):
                                                   self.flow_init)
 
         ### Post_screen
-        self.FinalCompost, self.Screen_rejects = Post_screen(self.compost_to_ps, self.WC_SC, self.InputData, self.Assumed_Comp.values,
+        self.FinalCompost, self.Compost_WC, self.Screen_rejects = Post_screen(self.compost_to_ps, self.WC_SC, self.InputData, self.Assumed_Comp.values,
                                                                 self.Material_Properties, self.LCI, self.flow_init)
-
-        ### POTW
-        POTW(self.liq_treatment_vol, self.liq_rem, self.to_reactor, self.Dig_to_Curing, self.FinalCompost, self.Index,
-             self.InputData, self.Assumed_Comp.values, self.Material_Properties, self.CommonData, self.LCI)
 
         ### AD Diesel and electricity use (general)
         self.LCI.add(name=('Technosphere', 'Equipment_Diesel'),
