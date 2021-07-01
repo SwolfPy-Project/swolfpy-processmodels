@@ -199,7 +199,7 @@ class Comp(ProcessModel):
 
         for y in self.Index:
             ### Output Waste Database
-            report["Waste"][y] = lci_report['Other_Residual'][y]
+            report["Waste"][y]['Other_Residual'] = lci_report['Other_Residual'][y]
 
             ### Output Technospphere Database
             report["Technosphere"][y][('Technosphere', 'Electricity_consumption')] =  lci_report[('Technosphere', 'Electricity_consumption')][y]
