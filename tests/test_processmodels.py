@@ -8,6 +8,7 @@ Tests for `swolfpy_processmodels` package
 """
 import swolfpy_processmodels as sp
 from swolfpy_inputdata import CommonData
+import numpy as np
 
 
 def LCA_model_helper(model):
@@ -28,22 +29,40 @@ def LCA_model_helper(model):
     if model.Process_Type == 'Reprocessing':
         assert Reprocessing_Index.issubset(report['Waste'])
         assert len(Reprocessing_Index) == len(report['Waste'])
+        for x in Reprocessing_Index:
+            for y in report['Waste'][x]:
+                assert not np.isnan(report['Waste'][x][y])
 
         assert Reprocessing_Index.issubset(report['Technosphere'])
         assert len(Reprocessing_Index) == len(report['Technosphere'])
+        for x in Reprocessing_Index:
+            for y in report['Technosphere'][x]:
+                assert not np.isnan(report['Technosphere'][x][y])
 
         assert Reprocessing_Index.issubset(report['Biosphere'])
         assert len(Reprocessing_Index) == len(report['Biosphere'])
+        for x in Reprocessing_Index:
+            for y in report['Biosphere'][x]:
+                assert not np.isnan(report['Biosphere'][x][y])
 
     elif model.Process_Type == 'Treatment' or model.Process_Type == 'Collection':
         assert Index.issubset(report['Waste'])
         assert len(Index) == len(report['Waste'])
+        for x in Index:
+            for y in report['Waste'][x]:
+                assert not np.isnan(report['Waste'][x][y])
 
         assert Index.issubset(report['Technosphere'])
         assert len(Index) == len(report['Technosphere'])
+        for x in Index:
+            for y in report['Technosphere'][x]:
+                assert not np.isnan(report['Technosphere'][x][y])
 
         assert Index.issubset(report['Biosphere'])
         assert len(Index) == len(report['Biosphere'])
+        for x in Index:
+            for y in report['Biosphere'][x]:
+                assert not np.isnan(report['Biosphere'][x][y])
 
     model.setup_MC()
     model.MC_calc()
@@ -75,6 +94,11 @@ def test_AD():
 def test_SS_MRF():
     assert sp.SS_MRF.Process_Type == 'Treatment'
     LCA_model_helper(sp.SS_MRF())
+
+
+def test_HC():
+    assert sp.HC.Process_Type == 'Treatment'
+    LCA_model_helper(sp.HC())
 
 
 def test_Reproc():
