@@ -23,10 +23,13 @@ Life-Cylce Process Models for swolfpy (swolfpy_processmodels)
         :target: https://swolfpy.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
+.. image:: https://github.com/SwolfPy-Project/swolfpy-processmodels/actions/workflows/python-app.yml/badge.svg?branch=master
+        :target: https://github.com/SwolfPy-Project/swolfpy-processmodels/actions/workflows/python-app.yml
+        :alt: Test
 
 * Free software: GNU GENERAL PUBLIC LICENSE V2
 * Documentation: https://swolfpy.readthedocs.io.
-* Repository: https://bitbucket.org/msm_sardar/swolfpy-processmodels
+* Repository: https://github.com/SwolfPy-Project/swolfpy-processmodels
 * Other links: 
 
   * https://go.ncsu.edu/swolfpy
