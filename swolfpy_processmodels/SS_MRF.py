@@ -7,11 +7,10 @@ Created on Tue Jan  7 11:10:12 2020
 import numpy as np
 import numpy_financial as npf
 from swolfpy_inputdata import SS_MRF_Input
-#from .SS_MRF_subprocess import LCI
 from .Common_subprocess import LCI
-from .SS_MRF_subprocess import Drum_Feeder, Man_Sort1, Vacuum, DS1, DS2, DS3, MS2_DS2, MS2_DS3
-from .SS_MRF_subprocess import Baler_1Way, Baler_2Way, GBS, AK, OG, MS3_G, Glass_type, OPET, MS4_Al, MS4_Fe, MS4_HDPE, MS4_PET, MS5
-from .SS_MRF_subprocess import HDPE_type, Magnet, EDS, Rolling_Stock, Conveyor, Mixed_paper_separation, Electricity, OHDPE
+from .MRF_subprocess import Drum_Feeder, Man_Sort1, Vacuum, DS1, DS2, DS3, MS2_DS2, MS2_DS3
+from .MRF_subprocess import Baler_1Way, Baler_2Way, GBS, AK, OG, MS3_G, Glass_type, OPET, MS4_Al, MS4_Fe, MS4_HDPE, MS4_PET, MS5
+from .MRF_subprocess import HDPE_type, Magnet, ECS, Rolling_Stock, Conveyor, Mixed_paper_separation, Electricity, OHDPE
 from .ProcessModel import ProcessModel
 
 
@@ -127,15 +126,15 @@ class SS_MRF(ProcessModel):
         self.LCI_Waste.add('Fe',self._MS4_Fe_rmnd)
 
         ### Eddy Current Separator
-        self._EDS_rmnd,self._EDS_rmvd=EDS(self._Magnet_rmnd,self.process_data[['Eddy Current Separator','Manual-ECS']].values,self.InputData,self.LCI)
+        self._ECS_rmnd,self._ECS_rmvd=ECS(self._Magnet_rmnd,self.process_data[['Eddy Current Separator','Manual-ECS']].values,self.InputData,self.LCI)
 
         ### Manual Sort 4-Al (Negative)
-        self._MS4_Al_rmnd,self._MS4_Al_rmvd=MS4_Al(self._EDS_rmvd,self.process_data['Manual Sort 4-Al (Negative)'].values,self.InputData,self.LCI)
+        self._MS4_Al_rmnd,self._MS4_Al_rmvd=MS4_Al(self._ECS_rmvd,self.process_data['Manual Sort 4-Al (Negative)'].values,self.InputData,self.LCI)
         self.LCI_Waste.add('Other_Residual',self._MS4_Al_rmvd)
         self.LCI_Waste.add('Al',self._MS4_Al_rmnd)
 
         ### Manual Sort 5 (Positive)
-        self._MS5_rmnd,self._MS5_rmvd=MS5(self._EDS_rmnd,self.process_data['Manual Sort 5 (Positive)'].values,self.InputData,self.LCI)
+        self._MS5_rmnd,self._MS5_rmvd=MS5(self._ECS_rmnd,self.process_data['Manual Sort 5 (Positive)'].values,self.InputData,self.LCI)
         self.LCI_Waste.add('Other_Residual',self._MS5_rmnd)
 
         ### 2-Way Baler: product is baled plastics and metals (container) + Film
@@ -155,8 +154,8 @@ class SS_MRF(ProcessModel):
                         (self._GBS_rmnd+self._OPET_rmvd if self.InputData.Rec_material['PET']['amount']>0 else 0)+\
                         (self._OPET_rmnd+self._OHDPE_rmvd if self.InputData.Rec_material['HDPE']['amount']>0 else 0)+\
                         (self._OHDPE_rmnd +self._Magnet_rmvd if self.InputData.Rec_material['Ferrous']['amount']>0 else 0)+\
-                        (self._Magnet_rmnd+self._EDS_rmvd if self.InputData.Rec_material['Aluminous']['amount']>0 else 0)+ \
-                        self._EDS_rmnd
+                        (self._Magnet_rmnd+self._ECS_rmvd if self.InputData.Rec_material['Aluminous']['amount']>0 else 0)+ \
+                        self._ECS_rmnd
 
         #conveyor
         Conveyor(self._Mass_toConveyor,self.InputData,self.LCI)

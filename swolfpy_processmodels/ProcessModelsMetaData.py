@@ -58,3 +58,16 @@ ProcessModelsMetaData['HC']['Process_Type'] = 'Treatment'
 ProcessModelsMetaData['HC']['Name'] = 'Home Composting'
 ProcessModelsMetaData['HC']['File'] = 'HC.py'
 ProcessModelsMetaData['HC']['InputType'] = ['SSO_HC']
+
+ProcessModelsMetaData['GC'] = {}
+ProcessModelsMetaData['GC']['Process_Type'] = 'RDF'
+ProcessModelsMetaData['GC']['Name'] = 'Gasification Syngas Combustion'
+ProcessModelsMetaData['GC']['File'] = 'GC.py'
+ProcessModelsMetaData['GC']['InputType'] = ['RDF']
+
+ProcessModelsMetaData['RDF'] = {}
+ProcessModelsMetaData['RDF']['Process_Type'] = 'Treatment'
+ProcessModelsMetaData['RDF']['Name'] = 'Refuse-Derived Fuel'
+ProcessModelsMetaData['RDF']['File'] = 'RDF.py'
+ProcessModelsMetaData['RDF']['InputType'] = ['RWC', 'MRDO']
+

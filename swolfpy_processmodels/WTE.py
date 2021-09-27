@@ -27,7 +27,7 @@ class WTE(ProcessModel):
 
         # MJ/Mg
         self.Energy_Calculations['Energy_Loss_Due_to_Water'] = (-1 * self.Material_Properties['Moisture Content'].values / 100 *
-                                                                self.CommonData.Evap_heat['Water_Evap_Heat']['amount'] * 1000)
+                                                                self.CommonData.Evap_heat['water']['amount'] * 1000)
 
         # MJ/Mg
         self.Energy_Calculations['Energy_Loss_Due_to_Ashes'] = (-1 *  self.process_data['Heat Lost via Ashes - Cp (J/g K)'].values *

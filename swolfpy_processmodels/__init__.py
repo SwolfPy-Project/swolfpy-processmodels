@@ -15,6 +15,8 @@ from .Reproc import Reproc
 from .SF_Col import SF_Col
 from .TS import TS
 from .HC import HC
+from .GC import GC
+from .RDF import RDF
 
 
 __all__ = ['ProcessModel',
@@ -27,6 +29,8 @@ __all__ = ['ProcessModel',
            'Reproc',
            'SF_Col',
            'TS',
-           'HC']
+           'HC',
+           'GC',
+           'RDF',]
 
 __version__ = '0.1.5'
