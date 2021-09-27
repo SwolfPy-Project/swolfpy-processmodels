@@ -111,6 +111,16 @@ def test_TS():
     LCA_model_helper(sp.TS())
 
 
+def test_GC():
+    assert sp.GC.Process_Type == 'RDF'
+    LCA_model_helper(sp.GC())
+
+
+def test_RDF():
+    assert sp.RDF.Process_Type == 'Treatment'
+    LCA_model_helper(sp.RDF())
+
+
 def test_SF_Col():
     assert sp.SF_Col.Process_Type == 'Collection'
     col_scheme = sp.SF_Col.scheme()
