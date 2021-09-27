@@ -15,8 +15,8 @@ Life-Cylce Process Models for swolfpy (swolfpy_processmodels)
     :target: https://pypi.org/project/swolfpy_processmodels/
     :alt: License
 
-.. image:: https://img.shields.io/pypi/dm/swolfpy.svg?label=Pypi%20downloads
-    :target: https://pypi.org/project/swolfpy/
+.. image:: https://img.shields.io/pypi/dm/swolfpy-processmodels.svg?label=Pypi%20downloads
+    :target: https://pypi.org/project/swolfpy-processmodels/
     :alt: Downloads
 
 .. image:: https://img.shields.io/pypi/format/swolfpy_processmodels.svg
