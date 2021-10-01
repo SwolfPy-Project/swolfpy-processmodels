@@ -10,6 +10,7 @@ from .ProcessModel import *
 from swolfpy_inputdata import LF_Input
 import ast
 from pathlib import Path
+from copy import deepcopy
 
 class LF(ProcessModel):
     Process_Type = 'Treatment'
@@ -396,13 +397,13 @@ class LF(ProcessModel):
         # Check the electricity production
         if LCI_DF['Electricity_production'].values.sum() > 0:
             LCI_DF['Electricity_production'] = (
-                LCI_DF['Electricity_production']
-                - LCI_DF['Electricity_consumption'])
+                LCI_DF['Electricity_production'].values
+                - LCI_DF['Electricity_consumption'].values)
             LCI_DF['Electricity_consumption'] = 0
         else:
             LCI_DF['Electricity_consumption'] = (
-                LCI_DF['Electricity_consumption']
-                - LCI_DF['Electricity_production'])
+                LCI_DF['Electricity_consumption'].values
+                - LCI_DF['Electricity_production'].values)
             LCI_DF['Electricity_production'] = 0 
 
         for y in self.Index:
@@ -466,7 +467,13 @@ class LCI():
         self.LCI[:,self.ColDict[name]]+=flow
 
     def report(self):
-        return(pd.DataFrame(self.LCI[:,:len(self.ColDict)],columns=list(self.ColDict.keys()),index=self.Index))
+        LCI = deepcopy(self.LCI)
+        return pd.DataFrame(LCI[:,:len(self.ColDict)],
+                            columns=list(self.ColDict.keys()),
+                            index=self.Index)
 
     def report_T(self):
-        return(pd.DataFrame(self.LCI[:,:len(self.ColDict)].transpose(),index=list(self.ColDict.keys()),columns=self.Index))
+        LCI = deepcopy(self.LCI)
+        return pd.DataFrame(LCI[:,:len(self.ColDict)].transpose(),
+                            index=list(self.ColDict.keys()),
+                            columns=self.Index)
