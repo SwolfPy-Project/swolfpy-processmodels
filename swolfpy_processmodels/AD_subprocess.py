@@ -66,7 +66,7 @@ def Reactor(input_flow, CommonData, process_data, input_data, Material_Propertie
     # Methane production
     CH4_prod_vol = (input_flow.data['sol_cont'].values / 1000
                     * Material_Properties['Methane Yield'].values
-                    * process_data['Percent of L0 reached'].values / 100)
+                    * process_data['L0 reached'].values / 100)
 
     CH4_prod_mass_asC = (CH4_prod_vol
                          * CommonData.STP['m3CH4_to_kg']['amount']
@@ -449,9 +449,9 @@ def curing(input_flow, input_to_reactor, CommonData, process_data, input_data, a
 
             # Carbon balance
             C_Remain = np.where(input_flow.data['C_cont'].values / input_to_reactor.data['C_cont'].apply(lambda x: 1 if x <= 0 else x ).values
-                                <= (1 - process_data['Percent Carbon loss during curing'].values / 100),
+                                <= (1 - process_data['C_loss'].values / 100),
                                 input_flow.data['C_cont'].values,
-                                input_to_reactor.data['C_cont'].values * (1 - process_data['Percent Carbon loss during curing'].values / 100))
+                                input_to_reactor.data['C_cont'].values * (1 - process_data['C_loss'].values / 100))
             C_loss = input_flow.data['C_cont'].values - C_Remain
 
             C_loss_as_CH4 = input_data.Curing_Bio['ad_pCasCH4']['amount'] * C_loss
@@ -463,7 +463,7 @@ def curing(input_flow, input_to_reactor, CommonData, process_data, input_data, a
                     flow=C_loss_as_CO2 * CommonData.MW['CO2']['amount'] / CommonData.MW['C']['amount'])
 
             # Nitrogen balance
-            N_loss = input_flow.data['N_cont'].values * process_data['Percent N emitted during composting'].values
+            N_loss = input_flow.data['N_cont'].values * process_data['N_loss'].values
             N_loss_as_N2O = N_loss * input_data.Curing_Bio['ad_pNasN2O']['amount']
             N_loss_as_NH3 = N_loss * input_data.Curing_Bio['ad_pNasNH3']['amount']
 
@@ -474,7 +474,7 @@ def curing(input_flow, input_to_reactor, CommonData, process_data, input_data, a
 
             # VOC emission
             VS_loss = input_data.Curing_Bio['VSlossPerCloss']['amount'] * C_loss / CommonData.MW['C']['amount']
-            VOC_emitted = VS_loss * process_data['VOC emissions during curing'].values / 1000000
+            VOC_emitted = VS_loss * process_data['VOC to VS_loss'].values / 1000000
             lci.add(name='NMVOC, non-methane volatile organic compounds, unspecified origin',
                     flow=VOC_emitted)
 

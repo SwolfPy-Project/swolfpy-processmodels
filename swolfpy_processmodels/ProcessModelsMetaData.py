@@ -24,7 +24,8 @@ ProcessModelsMetaData['LF'] = {}
 ProcessModelsMetaData['LF']['Name'] = 'Landfill'
 ProcessModelsMetaData['LF']['Process_Type'] = 'Treatment'
 ProcessModelsMetaData['LF']['File'] = 'LF.py'
-ProcessModelsMetaData['LF']['InputType'] = ['RWC', 'MRDO', 'Other_Residual', 'Bottom_Ash', 'Fly_Ash']
+ProcessModelsMetaData['LF']['InputType'] = ['RWC', 'MRDO', 'Other_Residual', 'Bottom_Ash',
+                                            'Fly_Ash', 'Unreacted_Ash']
 
 ProcessModelsMetaData['SS_MRF'] = {}
 ProcessModelsMetaData['SS_MRF']['Name'] = 'Single Stream Material Recovery Facility'

@@ -111,9 +111,8 @@ class SS_MRF(ProcessModel):
         self._MS4_HDPE_rmnd,self._MS4_HDPE_rmvd = MS4_HDPE(self._OHDPE_rmvd,self.process_data['Manual Sort 4-HDPE (Negative)'].values,self.InputData,self.LCI)
         self.LCI_Waste.add('Other_Residual',self._MS4_HDPE_rmvd)
 
-        ### HDPE sold by type?
-        self._HDPE_Unsorted,self._HDPE_P,self._HDPE_T = HDPE_type(self._MS4_HDPE_rmnd,self.InputData)
-        self.LCI_Waste.add('HDPE_Unsorted',self._HDPE_Unsorted)
+        ### HDPE sold by type
+        self._HDPE_P, self._HDPE_T = HDPE_type(self._MS4_HDPE_rmnd, self.InputData)
         self.LCI_Waste.add('HDPE_P',self._HDPE_P)
         self.LCI_Waste.add('HDPE_T',self._HDPE_T)
 

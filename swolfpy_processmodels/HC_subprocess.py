@@ -28,16 +28,16 @@ def active_comp(input_flow, common_data, input_data ,process_data, material_prop
 
     # Degradation
     C_loss = (input_flow.data['C_cont'].values
-              * process_data['Percent C-loss during composting'].values / 100
+              * process_data['C_loss'].values / 100
               * input_data.Degradation_param['acDegProp']['amount'] / 100)
 
     N_loss = (input_flow.data['N_cont'].values
-              * process_data['Percent N-loss during composting'].values / 100
+              * process_data['N_loss'].values / 100
               * input_data.Degradation_param['acDegProp']['amount'] / 100)
 
-    VS_loss = C_loss * process_data['Mass VS loss per mass C-loss'].values
+    VS_loss = C_loss * process_data['VS_loss to C_loss'].values
 
-    VOCs_loss = VS_loss * process_data['VOC emissions'].values / 10**6
+    VOCs_loss = VS_loss * process_data['VOC to VS_loss'].values / 10**6
 
     # Product: Final compost
     product = Flow(material_properties)

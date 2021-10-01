@@ -38,14 +38,14 @@ class AD(ProcessModel):
 
         ### Primary Pre_screen
         self.S1_unders, self.S1_overs = screen(self.Input,
-                                               self.process_data['Percent screened out in primary pre-screening (not sent to reactor)'].values / 100,
+                                               self.process_data['Pre Screen 1'].values / 100,
                                                self.Material_Properties,
                                                self.LCI,
                                                self.flow_init)
 
         ### Secondary Pre_screen
         self.S2_to_curing, self.S2_residuls = screen(self.S1_overs,
-                                                     self.process_data['Percent screened out in secondary pre-screening (residual not sent to composting)'].values / 100,
+                                                     self.process_data['Pre Screen 2'].values / 100,
                                                      self.Material_Properties,
                                                      self.LCI,
                                                      self.flow_init)
@@ -158,11 +158,24 @@ class AD(ProcessModel):
                   'Nitrate (ground water)',
                   'Nitrate (surface water)',
                   ('Technosphere', 'market_for_excavation_skid_steer_loader'),
-                  ('Technosphere', 'Electricity_production'),
                   'Carbon dioxide, fossil',
                   'Carbon dioxide, non-fossil']:
             if i not in self.lci_report.columns:
                 self.lci_report[i] = 0
+
+        net_elec = ((self.lci_report[('Technosphere', 'Electricity_production')].values
+                     - self.lci_report[('Technosphere', 'Electricity_consumption')].values)
+                    * self.Assumed_Comp.values).sum()
+        if net_elec >= 0:
+            self.lci_report[('Technosphere', 'Electricity_production')] = (
+                self.lci_report[('Technosphere', 'Electricity_production')].values
+                - self.lci_report[('Technosphere', 'Electricity_consumption')].values)
+            self.lci_report[('Technosphere', 'Electricity_consumption')] = 0
+        else:
+            self.lci_report[('Technosphere', 'Electricity_consumption')] = (
+                self.lci_report[('Technosphere', 'Electricity_consumption')].values
+                - self.lci_report[('Technosphere', 'Electricity_production')].values)
+            self.lci_report[('Technosphere', 'Electricity_production')] = 0
 
         self.lci_report['report_Methane, non-fossil'] = (self.lci_report['Methane, non-fossil'].values
                                                          + self.lci_report['Methane, non-fossil (unburned)'].values
