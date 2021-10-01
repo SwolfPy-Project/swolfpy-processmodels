@@ -158,11 +158,24 @@ class AD(ProcessModel):
                   'Nitrate (ground water)',
                   'Nitrate (surface water)',
                   ('Technosphere', 'market_for_excavation_skid_steer_loader'),
-                  ('Technosphere', 'Electricity_production'),
                   'Carbon dioxide, fossil',
                   'Carbon dioxide, non-fossil']:
             if i not in self.lci_report.columns:
                 self.lci_report[i] = 0
+
+        net_elec = ((self.lci_report[('Technosphere', 'Electricity_production')].values
+                     - self.lci_report[('Technosphere', 'Electricity_consumption')].values)
+                    * self.Assumed_Comp.values).sum()
+        if net_elec >= 0:
+            self.lci_report[('Technosphere', 'Electricity_production')] = (
+                self.lci_report[('Technosphere', 'Electricity_production')].values
+                - self.lci_report[('Technosphere', 'Electricity_consumption')].values)
+            self.lci_report[('Technosphere', 'Electricity_consumption')] = 0
+        else:
+            self.lci_report[('Technosphere', 'Electricity_consumption')] = (
+                self.lci_report[('Technosphere', 'Electricity_consumption')].values
+                - self.lci_report[('Technosphere', 'Electricity_production')].values)
+            self.lci_report[('Technosphere', 'Electricity_production')] = 0
 
         self.lci_report['report_Methane, non-fossil'] = (self.lci_report['Methane, non-fossil'].values
                                                          + self.lci_report['Methane, non-fossil (unburned)'].values

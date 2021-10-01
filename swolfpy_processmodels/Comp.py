@@ -197,6 +197,21 @@ class Comp(ProcessModel):
             for y in self.Index:
                 report[x][y] = {}
 
+        net_elec = ((lci_report[('Technosphere', 'Electricity_production')].values
+                     - lci_report[('Technosphere', 'Electricity_consumption')].values)
+                    * self.Assumed_Comp.values).sum()
+
+        if net_elec >= 0:
+            lci_report[('Technosphere', 'Electricity_production')] = (
+                lci_report[('Technosphere', 'Electricity_production')].values
+                - lci_report[('Technosphere', 'Electricity_consumption')].values)
+            lci_report[('Technosphere', 'Electricity_consumption')] = 0
+        else:
+            lci_report[('Technosphere', 'Electricity_consumption')] = (
+                lci_report[('Technosphere', 'Electricity_consumption')].values
+                - lci_report[('Technosphere', 'Electricity_production')].values)
+            lci_report[('Technosphere', 'Electricity_production')] = 0
+        
         for y in self.Index:
             ### Output Waste Database
             report["Waste"][y]['Other_Residual'] = lci_report['Other_Residual'][y]

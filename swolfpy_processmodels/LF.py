@@ -386,12 +386,25 @@ class LF(ProcessModel):
         self.LF["Waste"] = Waste
         self.LF["Technosphere"] = Technosphere
 
-        for x in [Waste,Technosphere]:
+        for x in [Waste, Technosphere]:
             for y in self.Index:
                 x[y]={}
 
 ### Output Biosphere Database
         LCI_DF = self.LCI.report()
+        
+        # Check the electricity production
+        if LCI_DF['Electricity_production'].values.sum() > 0:
+            LCI_DF['Electricity_production'] = (
+                LCI_DF['Electricity_production']
+                - LCI_DF['Electricity_consumption'])
+            LCI_DF['Electricity_consumption'] = 0
+        else:
+            LCI_DF['Electricity_consumption'] = (
+                LCI_DF['Electricity_consumption']
+                - LCI_DF['Electricity_production'])
+            LCI_DF['Electricity_production'] = 0 
+
         for y in self.Index:
             # Technosphere
             for x in self._key4:
