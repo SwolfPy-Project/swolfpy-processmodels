@@ -74,10 +74,10 @@ def add_water(input_flow, water_flow, material_properties, process_data, flow_in
 ### Active Composting
 def ac_comp(input_flow, common_data, process_data, input_data, assumed_comp, lci, flow_init):
     # Degradation
-    C_loss = input_flow.data['C_input'].values * process_data['Percent C-loss during composting'].values/100 * input_data.Deg_Param['acDegProp']['amount']/100
-    N_loss = input_flow.data['N_input'].values * process_data['Percent N-loss during composting'].values/100 * input_data.Deg_Param['acDegProp']['amount']/100
-    VS_loss = C_loss * process_data['Mass VS loss per mass C-loss'].values
-    VOCs_loss = VS_loss * process_data['VOC emissions'].values / 1000000
+    C_loss = input_flow.data['C_input'].values * process_data['C_loss'].values/100 * input_data.Deg_Param['acDegProp']['amount']/100
+    N_loss = input_flow.data['N_input'].values * process_data['N_loss'].values/100 * input_data.Deg_Param['acDegProp']['amount']/100
+    VS_loss = C_loss * process_data[' VS_loss to C_loss'].values
+    VOCs_loss = VS_loss * process_data['VOC to VS_loss'].values / 1000000
 
     #Product
     product = deepcopy(flow_init)
@@ -194,10 +194,10 @@ def vacuum(input_flow, sep_eff, Op_param, lci, flow_init):
 ### Curing
 def curing(input_flow, common_data, process_data, input_data, assumed_comp, lci, flow_init):
     #Degradation
-    C_loss = input_flow.data['C_cont'].values * process_data['Percent C-loss during composting'].values/100 * (100-input_data.Deg_Param['acDegProp']['amount'])/100
-    N_loss = input_flow.data['N_cont'].values * process_data['Percent N-loss during composting'].values/100 * (100-input_data.Deg_Param['acDegProp']['amount'])/100
-    VS_loss = C_loss * process_data['Mass VS loss per mass C-loss'].values
-    VOCs_loss = VS_loss * process_data['VOC emissions'].values / 1000000
+    C_loss = input_flow.data['C_cont'].values * process_data['C_loss'].values/100 * (100-input_data.Deg_Param['acDegProp']['amount'])/100
+    N_loss = input_flow.data['N_cont'].values * process_data['N_loss'].values/100 * (100-input_data.Deg_Param['acDegProp']['amount'])/100
+    VS_loss = C_loss * process_data[' VS_loss to C_loss'].values
+    VOCs_loss = VS_loss * process_data['VOC to VS_loss'].values / 1000000
 
     #Product
     product = deepcopy(flow_init)

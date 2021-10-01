@@ -32,14 +32,14 @@ class Comp(ProcessModel):
 
         ### Primary Pre_screen
         self.S1_unders, self.S1_overs = screen(input_flow=self.input_flow,
-                                               sep_eff=self.process_data['Percent screened out in primary pre-screening'].values/100,
+                                               sep_eff=self.process_data['Pre Screen 1'].values/100,
                                                Op_param=self.InputData.Screen,
                                                lci=self.LCI,
                                                flow_init=self.flow_init)
 
         ### Secondary Pre_screen
         self.S2_to_shredding, self.S2_residuls = screen(input_flow=self.S1_overs,
-                                                        sep_eff=self.process_data['Percent screened out in secondary pre-screening'].values/100,
+                                                        sep_eff=self.process_data['Pre Screen 2'].values/100,
                                                         Op_param=self.InputData.Screen,
                                                         lci=self.LCI,
                                                         flow_init=self.flow_init)
@@ -84,14 +84,14 @@ class Comp(ProcessModel):
 
         ### Post screen
         self.substrate_to_vac, self.ps_res = post_screen(self.substrate_to_ps,
-                                                         self.process_data['Percent post screened out'].values/100,
+                                                         self.process_data['Post Screen'].values/100,
                                                          self.InputData.Screen,
                                                          self.LCI,
                                                          self.flow_init)
 
         ### Vacuum
         self.substrate_to_cu, self.vac_res = vacuum(self.substrate_to_vac,
-                                                    self.process_data['Percent vacuumed out (vacprop)'].values/100,
+                                                    self.process_data['Vacuum'].values/100,
                                                     self.InputData.Vaccum_sys,
                                                     self.LCI,
                                                     self.flow_init)

@@ -38,14 +38,14 @@ class AD(ProcessModel):
 
         ### Primary Pre_screen
         self.S1_unders, self.S1_overs = screen(self.Input,
-                                               self.process_data['Percent screened out in primary pre-screening (not sent to reactor)'].values / 100,
+                                               self.process_data['Pre Screen 1'].values / 100,
                                                self.Material_Properties,
                                                self.LCI,
                                                self.flow_init)
 
         ### Secondary Pre_screen
         self.S2_to_curing, self.S2_residuls = screen(self.S1_overs,
-                                                     self.process_data['Percent screened out in secondary pre-screening (residual not sent to composting)'].values / 100,
+                                                     self.process_data['Pre Screen 2'].values / 100,
                                                      self.Material_Properties,
                                                      self.LCI,
                                                      self.flow_init)

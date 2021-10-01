@@ -228,10 +228,10 @@ def compost_use(input_flow, common_data, process_data, material_properties,
 
         C_released = (input_flow.data['C_cont'].values - C_storage) * (1 - common_data.ADC['frac_CH4']['amount'] / 100)
         C_CH4 = (input_flow.data['C_cont'].values - C_storage) * (common_data.ADC['frac_CH4']['amount'] / 100)
-        C_CH4_Oxidized = C_CH4 * process_data['Percent of Generated Methane oxidized'].values / 100
-        C_CH4_Flared = C_CH4 * process_data['Percent of Generated Methane Flared'].values / 100
-        C_CH4_Emitted = C_CH4 * process_data['Percent of Generated Methane Emitted'].values / 100
-        C_CH4_EnergyRec = C_CH4 * process_data['Percent of Generated Methane used for Energy'].values / 100
+        C_CH4_Oxidized = C_CH4 * process_data['Methane Oxidized'].values / 100
+        C_CH4_Flared = C_CH4 * process_data['Methane Flared'].values / 100
+        C_CH4_Emitted = C_CH4 * process_data['Methane Emitted'].values / 100
+        C_CH4_EnergyRec = C_CH4 * process_data['Methane to Energy'].values / 100
         C_CH4_EnergyRec_mass = C_CH4_EnergyRec * (common_data.MW['CH4']['amount'] / common_data.MW['C']['amount'])
         CH4_LHV = common_data.LHV['CH4']['amount'] / common_data.STP['m3CH4_to_kg']['amount']  # MJ/kgCH4
         C_CH4_Electricity = C_CH4_EnergyRec_mass * CH4_LHV * (common_data.ADC['Elec_eff']['amount'] / 100) / 3.6  #kWhElec
