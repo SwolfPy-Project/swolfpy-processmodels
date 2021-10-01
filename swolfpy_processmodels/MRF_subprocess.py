@@ -559,15 +559,12 @@ def HDPE_type(Input, InputData):
     HDPE_T = np.zeros(Input.shape[0])
 
     # HDPE - Pigmented Containers index 19
-    if InputData.Rec_Sorted_material['HDPE_Pigmented']['amount'] == 1:
-        HDPE_P[19] = Input[19]
+    HDPE_P[19] = Input[19]
 
     #HDPE - Translucent Containers index 18
-    if InputData.Rec_Sorted_material['HDPE_Translucent']['amount'] == 1:
-        HDPE_T[18] = Input[18]
+    HDPE_T[18] = Input[18]
 
-    HDPE_Unsorted = Input - (HDPE_P + HDPE_T)
-    return HDPE_Unsorted, HDPE_P, HDPE_T
+    return HDPE_P, HDPE_T
 
 ### Magnet
 def Magnet_RDF(Input, sep_eff, InputData, LCI):
