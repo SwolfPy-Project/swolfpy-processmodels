@@ -2,6 +2,14 @@
 History
 =======
 
+0.1.6 (2021-10-02)
+------------------
+
+* Add Home Composting (HC)
+* Add Gasification & Syngas combustion (GC)
+* Add Refuse-derived fuel (RDF)
+
+
 0.1.4 (2021-05-10)
 ------------------
 
