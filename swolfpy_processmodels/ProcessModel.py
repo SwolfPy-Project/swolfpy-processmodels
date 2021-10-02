@@ -5,8 +5,8 @@ Created on Tue Apr 21 21:31:49 2020
 @author: msmsa
 """
 from abc import ABC, abstractmethod
-import pandas as pd
 from swolfpy_inputdata import CommonData
+
 
 class ProcessModel(ABC):
     def __init__(self, process_name, CommonDataObjct):
@@ -16,8 +16,8 @@ class ProcessModel(ABC):
             self.CommonData = CommonData()
         self.process_name = process_name
 
-        ### Read Material properties
-        self.Material_Properties=self.CommonData.Material_Properties
+        # Read Material properties
+        self.Material_Properties = self.CommonData.Material_Properties
 
 
         self.Index = self.CommonData.Index
@@ -32,7 +32,7 @@ class ProcessModel(ABC):
         pass
 
     @abstractmethod
-    def setup_MC(self,seed=None):
+    def setup_MC(self, seed=None):
         pass
 
     @abstractmethod
