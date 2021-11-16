@@ -13,7 +13,11 @@ with open('HISTORY.rst') as history_file:
 requirements = [
 "swolfpy_inputdata",
 "numpy_financial",
-"plotly"
+"plotly",
+"pytest",
+"pytest-cov",
+"pytest-flake8",
+"coverage",
 ]
 
 setup_requirements = [ ]
@@ -60,6 +64,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/SwolfPy-Project/swolfpy-processmodels',
-    version='0.1.6',
+    version='0.1.7',
     zip_safe=False,
 )
