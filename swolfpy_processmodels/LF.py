@@ -26,8 +26,10 @@ class LF(ProcessModel):
 
         self.lcht_Alloc = self.InputData.lcht_Alloc
 
-        self._n = self.InputData.LF_gas['optime']['amount'] + 1
-        self.timescale = 101
+        self.GasColPlan = self.InputData.GasColPlan
+
+        self._n = self.InputData.LF_Op['optime']['amount'] + 1
+        self.timescale = 301
 
 # =============================================================================
 #
@@ -35,48 +37,160 @@ class LF(ProcessModel):
 #
 # =============================================================================
     def _Cal_LFG_Col_Ox(self):
+        self._plan = {0: 'Typical',
+                      1: 'Best Case',
+                      2: 'Worst Case',
+                      3: 'California'}[self.InputData.LFG_param['LFG_col_plan']['amount']]
+
         # Parameters for LF operation (timing for LFG collection)
         self._param1 = pd.DataFrame(index=['Waste buried in Year ' + str(i) for i in np.arange(0, self._n)])
 
         # Parameters for LF operation (timing for LFG collection)
         self._param1['Time to initial collection'] = [max(
-            self.InputData.LF_gas['initColTime']['amount']
-            - np.mod(i, self.InputData.LF_gas['cellFillTime']['amount']), 0)
+            self.GasColPlan.loc['initColTime', self._plan]
+            - np.mod(i, self.GasColPlan.loc['cellFillTime', self._plan]), 0)
             for i in np.arange(0,self._n)]
 
-        self._param1['Time to interim cover'] = [self.InputData.LF_gas['cellFillTime']['amount']
-                                                 - np.mod(i, self.InputData.LF_gas['cellFillTime']['amount'])
+        self._param1['Time to interim cover'] = [self.GasColPlan.loc['cellFillTime', self._plan]
+                                                 - np.mod(i, self.GasColPlan.loc['cellFillTime', self._plan])
                                                  for i in np.arange(0, self._n)]
 
-        self._param1['Time to long term cover'] = [self.InputData.LF_gas['incColTime']['amount']
-                                                   - np.mod(i,self.InputData.LF_gas['cellFillTime']['amount'])
+        self._param1['Time to long term cover'] = [self.GasColPlan.loc['incColTime', self._plan]
+                                                   - np.mod(i, self.GasColPlan.loc['cellFillTime', self._plan])
                                                    for i in np.arange(0, self._n)]
 
-        # How long is energy on
-        EnrgOff = (self.InputData.LF_gas['enrgOff1']['amount']
-            if self.InputData.LF_gas['enrgRecovered']['amount'] == 1
-            else 0)
+
+        LFG_Coll_Eff = np.zeros((int(self.timescale), int(self._n)))
+        for j in np.arange(0, self.timescale):
+            LFG_Coll_Eff[j] = [
+                None if i > self.InputData.LF_Op['optime']['amount'] else
+                self.GasColPlan.loc['finColEff', self._plan] if (i + j) >= (
+                    self.GasColPlan.loc['timeToFinCover', self._plan] + self.InputData.LF_Op['optime']['amount']) else
+                self.GasColPlan.loc['incColEff', self._plan] if j >= self._param1['Time to long term cover']['Waste buried in Year ' + str(i)] else
+                self.GasColPlan.loc['intColEff', self._plan] if j>= self._param1['Time to interim cover']['Waste buried in Year ' + str(i)] else
+                self.GasColPlan.loc['initColEff', self._plan] if j >= self._param1['Time to initial collection']['Waste buried in Year ' + str(i)] else
+                0 for i in np.arange(0, self._n)]
+
+        self._potential_LFG = pd.DataFrame(index=np.arange(self.timescale))
+        self._potential_LFG['Average Collection Eff'] = LFG_Coll_Eff.sum(axis=1) / (self._n)
+
+        k = self.InputData.LFG_param['actk']['amount']
+
+        decay_rate = (self.InputData.LFG_param['base_L0']['amount']
+            * (np.e**(-k * np.arange(0, self.timescale))
+               - np.e**(-k * np.arange(1, self.timescale + 1))))
+
+
+        dumped_waste =np.array([self.InputData.LF_Op['annWaste']['amount'] for i in range(int(self.InputData.LF_Op['optime']['amount']))]
+            + [0 for i in range(int(self.timescale - self.InputData.LF_Op['optime']['amount']))])
+
+        methane_gen = []
+        methane_col = []
+
+        for i in range(self.timescale):
+            methane_gen.append(sum(dumped_waste[i::-1] * decay_rate[0:i+1]))
+            methane_col.append(
+                sum(dumped_waste[i::-1]
+                * decay_rate[0:i+1]
+                * self._potential_LFG['Average Collection Eff'][0:i+1] / 100))
+
+        lfg_cfm = (methane_col
+                   / self.InputData.LFG_param['ch4prop']['amount']
+                   / 365 / 24 / 60  # yr to min
+                   * 35.3147)  # m3 to ft3
+
+        NMOC_CutOn = (methane_gen
+                      / self.InputData.LFG_param['ch4prop']['amount']
+                      * 10**3  # m3 --> L
+                      * self.InputData.Flare['NMOC_Conc']['amount'] / 10**6  # ppmv
+                      / 0.08206  # L.atm --> K.mol
+                      / (273.15 + self.InputData.Flare['Temp']['amount'])
+                      * self.InputData.Flare['NMOC_MW']['amount']
+                      / 10**6)  # g --> Mg
+
+        NMOC_CutOff = (methane_col
+                      / self.InputData.LFG_param['ch4prop']['amount']
+                      * 10**3  # m3 --> L
+                      * self.InputData.Flare['NMOC_Conc_actual']['amount'] / 10**6  # ppmv
+                      / 0.08206  # L.atm --> K.mol
+                      / (273.15 + self.InputData.Flare['Temp']['amount'])
+                      * self.InputData.Flare['NMOC_MW']['amount']
+                      / 10**6)  # g --> Mg
+
+        self.GasColPlan.loc['enrgOn', self._plan] = 10000
+        self.GasColPlan.loc['enrgOff', self._plan] = 0
+        if self.InputData.Energy_Rec['enrgRecovered']['amount'] == 1:
+            iterator = enumerate(lfg_cfm)
+            for i, j in iterator:
+                if j >= self.InputData.Energy_Rec['MinFowRec']['amount']:
+                    self.GasColPlan.loc['enrgOn', self._plan] =  (
+                        i + self.InputData.Energy_Rec['RecInstallTime']['amount'])
+                    break
+            for i, j in iterator:
+                if (j < self.InputData.Energy_Rec['MinFowRec']['amount']
+                    and j > (self.GasColPlan.loc['enrgOn', self._plan]
+                             + self.InputData.Energy_Rec['MinYrRec']['amount'])):
+                    self.GasColPlan.loc['enrgOff', self._plan] = i
+                    break
+
+        self.GasColPlan.loc['flareOn', self._plan] = 10000
+        self.GasColPlan.loc['flareOff', self._plan] = 0
+        iterator = enumerate(NMOC_CutOn)
+        for i, j in iterator:
+            if j >= self.InputData.Flare['NMOC_Cufoff']['amount']:
+                self.GasColPlan.loc['flareOn', self._plan] = i
+                self.GasColPlan.loc['flareOff', self._plan] = i + self.InputData.Flare['MinYr']['amount']
+                if self.GasColPlan.loc['flareOff', self._plan] < (self.InputData.LF_Op['optime']['amount']
+                                                                   + self.InputData.Flare['TimeReq']['amount']):
+                    self.GasColPlan.loc['flareOff', self._plan] = (
+                        self.InputData.LF_Op['optime']['amount']
+                        + self.InputData.Flare['TimeReq']['amount'])
+                break
+
+        if NMOC_CutOff[int(self.GasColPlan.loc['flareOff', self._plan])] > self.InputData.Flare['NMOC_Cufoff']['amount']:
+            for i in NMOC_CutOff[int(self.GasColPlan.loc['flareOff', self._plan] + 1):]:
+                self.GasColPlan.loc['flareOff', self._plan] += 1
+                if j < self.InputData.Flare['NMOC_Cufoff']['amount']:
+                    break
+
+        if self.InputData.Flare['Flow_cutoff']['amount']:
+            if lfg_cfm[int(self.GasColPlan.loc['flareOff', self._plan])] > self.InputData.Flare['Flow_req']['amount']:
+                for i in lfg_cfm[int(self.GasColPlan.loc['flareOff', self._plan] + 1):]:
+                    self.GasColPlan.loc['flareOff', self._plan] += 1
+                    if i < self.InputData.Flare['Flow_req']['amount']:
+                        break
+
+# =============================================================================
+#         self._potential_LFG['waste Mg/year'] = dumped_waste
+#         self._potential_LFG['Methane Generated m3/year'] = methane_gen
+#         self._potential_LFG['Methane Collected m3/year'] = methane_col
+#         self._potential_LFG['LFG Collected cfm'] = lfg_cfm
+#         self._potential_LFG['NMOC CutOn Mg/yr'] = NMOC_CutOn
+#         self._potential_LFG['NMOC CutOff Mg/yr'] = NMOC_CutOff
+# 
+# =============================================================================
 
         # Collection efficiency
         self.LFG_Coll_Eff = np.zeros((int(self.timescale), int(self._n)))
         for j in np.arange(0, self.timescale):
             self.LFG_Coll_Eff[j] = [
-                None if i > self.InputData.LF_gas['optime']['amount'] else
-                0 if(i + j) >= (max(EnrgOff, self.InputData.LF_gas['flareOff']['amount'])) else
-                self.InputData.LF_gas['finColEff']['amount'] if (i + j) >= (
-                    self.InputData.LF_gas['timeToFinCover']['amount'] + self.InputData.LF_gas['optime']['amount']) else
-                self.InputData.LF_gas['incColEff']['amount'] if j >= self._param1['Time to long term cover']['Waste buried in Year ' + str(i)] else
-                self.InputData.LF_gas['intColEff']['amount'] if j>= self._param1['Time to interim cover']['Waste buried in Year ' + str(i)] else
-                self.InputData.LF_gas['initColEff']['amount'] if j >= self._param1['Time to initial collection']['Waste buried in Year ' + str(i)] else
+                None if i > self.InputData.LF_Op['optime']['amount'] else
+                0 if(i + j) >= (max(self.GasColPlan.loc['enrgOff', self._plan], self.GasColPlan.loc['flareOff', self._plan])) else
+                self.GasColPlan.loc['finColEff', self._plan] if (i + j) >= (
+                    self.GasColPlan.loc['timeToFinCover', self._plan] + self.InputData.LF_Op['optime']['amount']) else
+                self.GasColPlan.loc['incColEff', self._plan] if j >= self._param1['Time to long term cover']['Waste buried in Year ' + str(i)] else
+                self.GasColPlan.loc['intColEff', self._plan] if j>= self._param1['Time to interim cover']['Waste buried in Year ' + str(i)] else
+                self.GasColPlan.loc['initColEff', self._plan] if j >= self._param1['Time to initial collection']['Waste buried in Year ' + str(i)] else
                 0 for i in np.arange(0, self._n)]
 
         # Oxidation
         self._LFG_Ox_Eff = np.zeros((int(self.timescale), int(self._n)))
         for j in np.arange(0, self.timescale):
             self._LFG_Ox_Eff[j] = [
-                None if i > self.InputData.LF_gas['optime']['amount'] else
-                self.InputData.Ox['ox_fincov']['amount'] if (i + j) >= (max(EnrgOff, self.InputData.LF_gas['flareOff']['amount'])) else
-                self.InputData.Ox['ox_nocol']['amount'] if self.LFG_Coll_Eff[int(j)][int(i)] < self.InputData.LF_gas['incColEff']['amount'] else
+                None if i > self.InputData.LF_Op['optime']['amount'] else
+                self.InputData.Ox['ox_fincov']['amount'] if (i + j) >= (max(
+                   self.GasColPlan.loc['enrgOff', self._plan], self.GasColPlan.loc['flareOff', self._plan])) else
+                self.InputData.Ox['ox_nocol']['amount'] if self.LFG_Coll_Eff[int(j)][int(i)] < self.GasColPlan.loc['incColEff', self._plan] else
                 self.InputData.Ox['ox_col']['amount']  for i in np.arange(0, self._n)]
 
         # calculating average collection and oxdiation
@@ -97,7 +211,7 @@ class LF(ProcessModel):
 
         # LFG generation parameter
         self._param2['k'] = (self.Material_Properties['Lab Decay Rate'].values / 156
-                             * self.InputData.LF_gas['actk']['amount'] / 0.04)
+                             * self.InputData.LFG_param['actk']['amount'] / 0.04)
 
         self._param2['L0'] = self.Material_Properties['Methane Yield'].values
 
@@ -139,10 +253,10 @@ class LF(ProcessModel):
 
         # Methane combustion for Energy
         def comb_frac(j):
-            return (0 if not self.InputData.LF_gas['enrgRecovered']['amount'] == 1 else
-                    0 if j <= self.InputData.LF_gas['enrgOn']['amount'] else
-                    (100 - self.InputData.LF_gas['EnrgRecDownTime']['amount']) / 100
-                    if j <= self.InputData.LF_gas['enrgOff1']['amount'] else 0)
+            return (0 if not self.InputData.Energy_Rec['enrgRecovered']['amount'] == 1 else
+                    0 if j <= self.GasColPlan.loc['enrgOn', self._plan] else
+                    (100 - self.InputData.Energy_Rec['EnrgRecDownTime']['amount']) / 100
+                    if j <= self.GasColPlan.loc['enrgOff', self._plan] else 0)
 
         # fraction of collected that combusted
         frac_cob = pd.Series(np.arange(0, self.timescale)).apply(comb_frac).values
@@ -164,7 +278,7 @@ class LF(ProcessModel):
         # Electricity generated
         self.LFG['Electricity generated'] = (
             self.LFG['Total Methane combusted'].values
-            * self.InputData.LFG_Comb['convEff']['amount']
+            * self.InputData.Energy_Rec['convEff']['amount']
             * self.CommonData.LHV['CH4']['amount']
             / 3.6)
 
@@ -187,9 +301,9 @@ class LF(ProcessModel):
         self.LFG['Total Methane Emitted'] = (
             self.LFG['Total generated Methane'].values
             - self.LFG['Total Methane combusted'].values
-            * self.InputData.LF_gas['EngineCombEff']['amount'] / 100
+            * self.InputData.Energy_Rec['EngineCombEff']['amount'] / 100
             - self.LFG['Total Methane flared'].values
-            * self.InputData.LF_gas['FlareCombEff']['amount'] / 100
+            * self.InputData.Flare['FlareCombEff']['amount'] / 100
             - self.LFG['Total Methane oxidized'].values)
 
         self.LFG['Percent of Generated Methane Emitted'] = (
@@ -203,7 +317,7 @@ class LF(ProcessModel):
 
         # Emission factor: Emission to the air from venting, flaring and combustion of biogas
         Biogas_factor = (self.gas_emission_factor['Concentration_ppmv'].values
-                         / (self.InputData.LF_gas['ch4prop']['amount'] * 10**6))
+                         / (self.InputData.LFG_param['ch4prop']['amount'] * 10**6))
 
         Vent_factor = (Biogas_factor
                        * (1 - self.gas_emission_factor['Destruction_Eff_Vent'].values / 100)
@@ -242,15 +356,15 @@ class LF(ProcessModel):
 
         self.LFG['Mass of CO2 generated with methane'] = (
             self.LFG['Total generated Methane'].values
-            * (1 / self.InputData.LF_gas['ch4prop']['amount'])
-            * (1 - self.InputData.LF_gas['ch4prop']['amount'])
+            * (1 / self.InputData.LFG_param['ch4prop']['amount'])
+            * (1 - self.InputData.LFG_param['ch4prop']['amount'])
             * self.CommonData.STP['m3CO2_to_kg']['amount'])
 
         self.LFG['Mass of CO2 generated with methane combustion'] = (
             (self.LFG['Total Methane combusted'].values
-             * self.InputData.LF_gas['EngineCombEff']['amount'] / 100
+             * self.InputData.Energy_Rec['EngineCombEff']['amount'] / 100
              + self.LFG['Total Methane flared'].values
-             * self.InputData.LF_gas['FlareCombEff']['amount'] / 100)
+             * self.InputData.Flare['FlareCombEff']['amount'] / 100)
             * 1000
             * (1 / self.CommonData.STP['mole_to_L']['amount'])
             * self.CommonData.MW['CO2']['amount'] / 1000)
@@ -311,7 +425,7 @@ class LF(ProcessModel):
         self._param3['Annual Precipitation (mm)'] = 900
         self._param3['Percent of Precipitation that Becomes Leachate (%)'] = (
             [20, 13.3, 6.6, 6.6, 6.6, 6.5, 6.5, 6.5, 6.5, 6.5]
-            + [0.04 for i in range(90)])
+            + [0.04 for i in range(self.timescale - 11)])
 
         self._param3['fraction of Leachate that is Recirculated'] = 0
         self._param3['farction of Collected Leachate that is Sent to WWTP'] = 1
@@ -611,7 +725,7 @@ class LF(ProcessModel):
         self._Cal_LFG()
         self._Leachate()
         self._Material_energy_use()
-        self._Add_cost()
+        #self._Add_cost()
 
     # setup for Monte Carlo simulation
     def setup_MC(self, seed=None):
