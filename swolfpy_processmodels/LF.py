@@ -556,21 +556,19 @@ class LF(ProcessModel):
                 1 - self.lcht_coef['Removal Efficiency (%)'].values / 100) * 1000,
             index=self.lcht_coef['Emission'].values)
 
-        self.Surface_water_emission = self.lcht_Alloc.values*self._Effluent.values
-        self.Surface_water_emission = pd.DataFrame(self.Surface_water_emission,
-                                                   index=self.Index,
-                                                   columns=self.lcht_coef['Emission'].values + "_ to SW")
+        self.Surface_water_emission = pd.DataFrame(
+            self.lcht_Alloc.values * self._Effluent.values,
+            index=self.Index,
+            columns=self.lcht_coef['Emission'].values + "_ to SW")
 
-        key2 = zip(self.Surface_water_emission.columns, self.lcht_coef['Surface_water'].values)
-        self._key2 = dict(key2)
+        self._key2 = dict(zip(self.Surface_water_emission.columns, self.lcht_coef['Surface_water'].values))
 
-        self.Ground_water_emission = self.lcht_Alloc.values * self._Fugitive_Leachate.values
-        self.Ground_water_emission = pd.DataFrame(self.Ground_water_emission,
-                                                  index=self.Index,
-                                                  columns=self.lcht_coef['Emission'].values + "_ to GW")
+        self.Ground_water_emission = pd.DataFrame(
+            self.lcht_Alloc.values * self._Fugitive_Leachate.values,
+            index=self.Index,
+            columns=self.lcht_coef['Emission'].values + "_ to GW")
 
-        key3 = zip(self.Ground_water_emission.columns, self.lcht_coef['Ground_water'].values)
-        self._key3 = dict(key3)
+        self._key3 = dict(zip(self.Ground_water_emission.columns, self.lcht_coef['Ground_water'].values))
 
         # Electricity Consumption for Leachate Treatment
         BOD_removed = (sum(self.lcht_conc['BOD5, Biological Oxygen Demand'].values
@@ -596,7 +594,7 @@ class LF(ProcessModel):
                          * BOD_elec
                          + Pump_elec)
 
-        # Adding Blower electricity use to LCI
+        # Adding leachate collection electricity use to LCI
         self.LCI.add('Electricity_consumption', Leachate_elec.values)
 
         # List of metals in Leachate
@@ -653,82 +651,126 @@ class LF(ProcessModel):
                      self.sludge['Medium-Heavy Duty Transportation'].values * 1000)
 
     # Life-Cycle Costs
-    # Add economic data
     def _Add_cost(self):
         self.cost_DF = pd.DataFrame(index=self.Index)
-        """
-        #######
-        TO DO:
-        Add cost calc
-        ######
-        """
-        self.cost_DF[('biosphere3', 'Operational_Cost')] = 0
+        self.cost_DF[('biosphere3', 'Operational_Cost')] = [
+            self.InputData.Operational_Cost[y]['amount'] for y in self.Index]
 
     # Life-Cycle Inventory
     def _Material_energy_use(self):
-        # Electricity Use
-        # Building electricity use
-        bld_elec = 0.596  #kWh/Mg
-        self.LCI.add('Electricity_consumption',bld_elec)
+        # Electricity used for office and maitenance buildings
+        bld_elec = 0.081  # kWh/Mg
+        self.LCI.add('Electricity_consumption', bld_elec)
 
-        # Fuel
-        # Diesel
-        dies_pc=2.342866    #L/Mg
-        self.LCI.add('Equipment_Diesel',dies_pc)
-        # Gasoline
-        gaso_pc=0.000616    #L/Mg
-        self.LCI.add('Equipment_Gasoline',gaso_pc)
+        """
+        Diesel use include:
+        1. Fuel used for heavy equipment during construction
+        2. Fuel used for heavy equipment during closure
+        3. Fuel used for heavy equipment during operation
+        4. Fuel used for heavy equipment during closure
+        """
+        diesel = 1.628  # L/Mg
+        self.LCI.add('Equipment_Diesel', diesel)
+
+        # Material Use
+        """
+        HDPE include:
+        1. Mass of HDPE liner for construction
+        2. Mass of HDPE Final Cover & Closure System
+        3. Mass of HDPE replaced on a yearly basis for Post-Closure Care
+        """
+        HDPE_Liner = 0.074  # kg/Mg
+        self.LCI.add('HDPE_Liner', HDPE_Liner)
+
+        """
+        HDPE Pipe include:
+        1. HDPE pipe for construction
+        2. HDPE pipe for final cover& Closure system
+        """
+        HDPE_Pipe = 0.0022  # m/Mg
+        self.LCI.add('HDPE_Pipe', HDPE_Pipe)
+        
+        """
+        PVC pipe for final cover and closure system
+        """ 
+        PVC_Pipe = 0.0011  # m/Mg
+        self.LCI.add('PVC_Pipe', PVC_Pipe)
+        
+        """
+        Steal
+        """
+        Steel = 0.2382  # kg/Mg
+        self.LCI.add('Steel', Steel)
+
+        """
+        Concrete
+        """
+        Concrete = 0.0071  # kg/Mg
+        self.LCI.add('Concrete', Concrete)        
+        
+        """
+        Asphalt
+        """
+        Asphalt = 0.0850  # kg/Mg
+        self.LCI.add('Asphalt', Asphalt)      
+
+
+        """
+        Sand
+        """
+        Sand = 33.751  # kg/Mg
+        self.LCI.add('Sand', Sand)
+        
+        """
+        Gravel
+        """
+        Gravel = 2.320  # kg/Mg
+        self.LCI.add('Gravel', Gravel)
+
+        """
+        Clay
+        """
+        Clay = 57.115  # kg/Mg
+        self.LCI.add('Clay', Clay)
+        
+        """
+        Building
+        """
+        Building = 2.29E-05  # m2/Mg
+        self.LCI.add('Building', Building)
 
         # Transportation
         # Heavy duty truck transportation required
-        HD_trans = 0.1409593    #Mg-km/Mg
-        self.LCI.add('Internal_Process_Transportation_Heavy_Duty_Diesel_Truck',HD_trans*1000)
+        HD_trans = 542.98    # kgkm/Mg
+        self.LCI.add('Internal_Process_Transportation_Heavy_Duty_Diesel_Truck', HD_trans)
         # Medium duty transportation required
-        MD_trans =     2.1137375    #Mg-km/Mg
-        self.LCI.add('Internal_Process_Transportation_Medium_Duty_Diesel_Truck',MD_trans*1000)
+        MD_trans = 1611.18  # kgkm/Mg
+        self.LCI.add('Internal_Process_Transportation_Medium_Duty_Diesel_Truck', MD_trans)
         # Heavy duty truck transportation required
-        HD_trans_empty  = 4.02741E-03    #Mg-km/Mg
-        self.LCI.add('Empty_Return_Heavy_Duty_Diesel_Truck',HD_trans_empty*1000)
+        HD_trans_empty  = 0.018  # vkm/Mg
+        self.LCI.add('Empty_Return_Heavy_Duty_Diesel_Truck', HD_trans_empty)
         # Medium duty transportation required
-        MD_trans_empty = 8.80724E-02    #Mg-km/Mg
-        self.LCI.add('Empty_Return_Medium_Duty_Diesel_Truck',MD_trans_empty*1000)
-
-        # Material Use
-        # HDPE liner
-        op_HDPE_Liner = 4.69579E-03  #kg/Mg
-        self.LCI.add('HDPE_Liner',op_HDPE_Liner)
-        # HDPE cover
-        cl_HDPE_Liner=1.15879E-01 #kg/Mg
-        self.LCI.add('HDPE_Liner',cl_HDPE_Liner)
-        # Geotextile
-        cl_GeoTxt=1.14786E-02 #kg/Mg
-        self.LCI.add('Geotextile',cl_GeoTxt)
-        # HDPE pipe
-        cl_HDPE_Pipe=1.3349E-03 #m/Mg
-        self.LCI.add('HDPE_Pipe',cl_HDPE_Pipe)
-        # PVC pipe
-        cl_PVC_Pipe=2.5680E-04    #m/Mg
-        self.LCI.add('PVC_Pipe',cl_PVC_Pipe)
-        # HDPE cover
-        pc_HDPE_Liner=3.8626E-04 #kg/Mg
-        self.LCI.add('HDPE_Liner',pc_HDPE_Liner)
-        # Geotextile
-        pc_GeoTxt=3.8262E-05 #kg/Mg
-        self.LCI.add('Geotextile',pc_GeoTxt)
+        MD_trans_empty = 0.067  # vkm/Mg
+        self.LCI.add('Empty_Return_Medium_Duty_Diesel_Truck', MD_trans_empty)
 
         self._key4 = {
             'Electricity_production': ('Technosphere', 'Electricity_production'),
             'Electricity_consumption': ('Technosphere', 'Electricity_consumption'),
             'Equipment_Diesel': ('Technosphere', 'Equipment_Diesel'),
-            'Equipment_Gasoline': ('Technosphere', 'Equipment_Gasoline'),
             'Internal_Process_Transportation_Heavy_Duty_Diesel_Truck': ('Technosphere', 'Internal_Process_Transportation_Heavy_Duty_Diesel_Truck'),
             'Internal_Process_Transportation_Medium_Duty_Diesel_Truck': ('Technosphere', 'Internal_Process_Transportation_Medium_Duty_Diesel_Truck'),
             'Empty_Return_Heavy_Duty_Diesel_Truck': ('Technosphere', 'Empty_Return_Heavy_Duty_Diesel_Truck'),
             'Empty_Return_Medium_Duty_Diesel_Truck': ('Technosphere', 'Empty_Return_Medium_Duty_Diesel_Truck'),
             'HDPE_Liner': ('Technosphere', 'HDPE_Liner'),
-            'Geotextile': ('Technosphere', 'Geotextile'),
             'HDPE_Pipe': ('Technosphere', 'HDPE_Pipe'),
-            'PVC_Pipe': ('Technosphere', 'PVC_Pipe')}
+            'PVC_Pipe': ('Technosphere', 'PVC_Pipe'),
+            'Steel': ('Technosphere', 'Steel'),
+            'Concrete': ('Technosphere', 'Concrete'),
+            'Asphalt': ('Technosphere', 'Asphalt'),
+            'Sand': ('Technosphere', 'Sand'),
+            'Gravel': ('Technosphere', 'Gravel'),
+            'Clay': ('Technosphere', 'Clay'),
+            'Building': ('Technosphere', 'Building'),}
 
     # Report
     def report(self):
@@ -781,7 +823,6 @@ class LF(ProcessModel):
         self.LCI_bio[('biosphere3','Operational_Cost')] = self.cost_DF[('biosphere3','Operational_Cost')].values
         self.Biosphere = self.LCI_bio[self.bio_rename_dict.values()].transpose().to_dict()
         self.LF["Biosphere"] = self.Biosphere
-
         return self.LF
 
     # Calc function _ Do all the calculations
@@ -801,7 +842,6 @@ class LF(ProcessModel):
         input_list = self.InputData.gen_MC()
         self.calc()
         return input_list
-
 
 # LCI class
 class LCI():
