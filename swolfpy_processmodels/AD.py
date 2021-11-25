@@ -32,6 +32,16 @@ class AD(ProcessModel):
 
     def calc(self):
         self.LCI = LCI(index=self.Index, n_col=51)
+
+        # Methane Yield (m3/dry Mg)
+        self.Material_Properties['Methane Yield'] = (
+            self.Material_Properties['Biogenic Carbon Content'].values / 100
+            * self.Material_Properties['Ultimate Biogenic C Converted to Biogas'].values / 100
+            * self.CommonData.STP['mole_to_L']['amount']
+            / self.CommonData.MW['C']['amount']
+            * 0.5
+            * 1000)
+
         ### Initial mass
         self.Input = Flow(self.Material_Properties)
         self.Input.init_flow(1000)
