@@ -20,18 +20,19 @@ class LF(ProcessModel):
                                  process_name=self.process_name,
                                  CommonDataObjct=CommonDataObjct)
 
+        self.process_data = self.InputData.process_data
+
         self.gas_emission_factor = self.InputData.gas_emission_factor
 
-        self.lcht_coef = self.InputData.lcht_coef
-
-        self.lcht_Alloc = self.InputData.lcht_Alloc
+        self.lcht_Qlty = self.InputData.lcht_Qlty
 
         self.GasColPlan = self.InputData.GasColPlan
+
+        self.timescale = 301
 
     # Landfill Gas Collection Efficiency
     def _Cal_LFG_Col_Ox(self):
         self._n = int(self.InputData.LF_Op['optime']['amount'])
-        self.timescale = 301
 
         self._plan = {0: 'Typical',
                       1: 'Best Case',
@@ -65,10 +66,10 @@ class LF(ProcessModel):
         filter_IntCover = xx >= self._param1['Time to interim cover'].values
         filter_InitCover = xx >= self._param1['Time to initial collection'].values
 
-        self.LFG_Coll_Eff[filter_InitCover] = self.GasColPlan.loc['initColEff', self._plan]
-        self.LFG_Coll_Eff[filter_IntCover] = self.GasColPlan.loc['intColEff', self._plan]
-        self.LFG_Coll_Eff[filter_IncCover] = self.GasColPlan.loc['incColEff', self._plan]
-        self.LFG_Coll_Eff[filter_FCover] = self.GasColPlan.loc['finColEff', self._plan]
+        self.LFG_Coll_Eff[filter_InitCover] = self.InputData.LFG_param['initColEff']['amount']
+        self.LFG_Coll_Eff[filter_IntCover] = self.InputData.LFG_param['intColEff']['amount']
+        self.LFG_Coll_Eff[filter_IncCover] = self.InputData.LFG_param['incColEff']['amount']
+        self.LFG_Coll_Eff[filter_FCover] = self.InputData.LFG_param['finColEff']['amount']
 
         self._potential_LFG = pd.DataFrame(index=index_t)
         self._potential_LFG['Average Collection Eff'] = self.LFG_Coll_Eff.mean(axis=1)
@@ -181,7 +182,7 @@ class LF(ProcessModel):
         self._LFG_Ox_Eff = np.full((int(self.timescale), int(self._n)), self.InputData.Ox['ox_nocol']['amount'])
 
         self.filter_ox_1 = xx + yy >= max(self.GasColPlan.loc['enrgOff', self._plan], self.GasColPlan.loc['flareOff', self._plan])
-        self.filter_ox_2 = self.LFG_Coll_Eff >= self.GasColPlan.loc['incColEff', self._plan]
+        self.filter_ox_2 = self.LFG_Coll_Eff >= self.InputData.LFG_param['incColEff']['amount']
 
         self._LFG_Ox_Eff[self.filter_ox_2] = self.InputData.Ox['ox_col']['amount']
         self._LFG_Ox_Eff[self.filter_ox_1] = self.InputData.Ox['ox_fincov']['amount']
@@ -200,6 +201,15 @@ class LF(ProcessModel):
         # LFG generation parameter
         self._param2['k'] = (self.Material_Properties['Lab Decay Rate'].values / 156
                              * self.InputData.LFG_param['actk']['amount'] / 0.04)
+
+        # Methane Yield (m3/dry Mg)
+        self.Material_Properties['Methane Yield'] = (
+            self.Material_Properties['Biogenic Carbon Content'].values / 100
+            * self.Material_Properties['Ultimate Biogenic C Converted to Biogas'].values / 100
+            * self.CommonData.STP['mole_to_L']['amount']
+            / self.CommonData.MW['C']['amount']
+            * self.InputData.LFG_param['ch4prop']['amount']
+            * 1000)
 
         self._param2['L0'] = self.Material_Properties['Methane Yield'].values
 
@@ -405,51 +415,78 @@ class LF(ProcessModel):
         """
         Calculates the leachate flow and concentraions
         """
-        n_lcht = 100
+        self._n_lcht = 100
         # LEACHATE GENERATION, QUANTITY AND CONSTITUENTS
-        self._param3 = pd.DataFrame(index=np.arange(n_lcht), dtype=float)
+        self._param3 = pd.DataFrame(index=np.arange(self._n_lcht), dtype=float)
         self._param3['year'] = np.arange(1, 101)
 
         self._param3['Time to initial cover placement'] = (
             self.GasColPlan.loc['cellFillTime', self._plan]
-            - np.mod(np.arange(n_lcht), self.GasColPlan.loc['cellFillTime', self._plan]))
+            - np.mod(np.arange(self._n_lcht), self.GasColPlan.loc['cellFillTime', self._plan]))
 
         k = self.InputData.LFG_param['actk']['amount']
-        if k <= 0.02:
+        if k <= 0.03:
             self._param3['Annual Precipitation (mm)'] = self.InputData.Leachate['precip_arid']['amount']
-        elif k <= 0.4:
+        elif k <= 0.6:
             self._param3['Annual Precipitation (mm)'] = self.InputData.Leachate['precip_mod']['amount']
-        elif k <= 0.12:
+        elif k > 0.06:
             self._param3['Annual Precipitation (mm)'] = self.InputData.Leachate['precip_wet']['amount']
-        else:
+
+        if self.InputData.Leachate['is_bioreactor']['amount']:
             self._param3['Annual Precipitation (mm)'] = self.InputData.Leachate['precip_bio']['amount']
 
-        self.LeachColEff = np.full((n_lcht, self._n), self.InputData.Leachate['prep_leach_init']['amount'])
-        xx, yy = np.mgrid[0:n_lcht, 0:self._n]
+        self.LeachColEff = np.full((self._n_lcht, self._n), self.InputData.Leachate['prep_leach_init']['amount'])
+        xx, yy = np.mgrid[0:self._n_lcht, 0:self._n]
         filter_FCover = xx + yy >= self.GasColPlan.loc['timeToFinCover', self._plan] + self.InputData.LF_Op['optime']['amount']
-        filter_IntCover = (xx.reshape(self._n, n_lcht) >= self._param3['Time to initial cover placement'].values).reshape(n_lcht, self._n)
+        filter_IntCover = (xx.reshape(self._n, self._n_lcht) >= self._param3['Time to initial cover placement'].values).reshape(self._n_lcht, self._n)
         self.LeachColEff[filter_IntCover] = self.InputData.Leachate['prep_leach_red']['amount']
         self.LeachColEff[filter_FCover] = self.InputData.Leachate['prep_leach_f']['amount']
 
         self._param3['Frac Precip to Leachate'] = self.LeachColEff.mean(axis=1)
 
-        self._param3['frac Col Leach Recirculated'] = 0.0
+        if self.InputData.Leachate['is_bioreactor']['amount']:
+            Circulate = np.zeros(self._n_lcht)
+            fltr_cir = self._param3['year'].values < self.InputData.Leachate['LF_time2']['amount']
+            fltr_cir_off = self._param3['year'].values < self.InputData.Leachate['LF_time1']['amount']
+            Circulate[fltr_cir] = self.InputData.Leachate['frac_recirc']['amount']
+            Circulate[fltr_cir_off] = 0.0
+            self._param3['frac Col Leach Recirculated'] = Circulate
+        else:
+            self._param3['frac Col Leach Recirculated'] =  0.0
+
         self._param3['frac Col Leach to WWTP'] = 1.0 - self._param3['frac Col Leach Recirculated'].values
 
-        leach_col_eff = np.zeros(n_lcht)
-        fltr_1 = self._param3['year'].values <= self.InputData.Leachate['LF_time3']['amount']
-        fltr_2 = self._param3['year'].values <= self.InputData.Leachate['LF_time1']['amount']
+        leach_col_eff = np.zeros(self._n_lcht)
+        fltr_1 = self._param3['year'].values < self.InputData.Leachate['LF_time3']['amount']
+        fltr_2 = self._param3['year'].values < self.InputData.Leachate['LF_time1']['amount']
         leach_col_eff[fltr_1] = self.InputData.Leachate['Lcht_Col_Ef']['amount']
         leach_col_eff[fltr_2] = 0.0
         self._param3['Leach Col Eff'] = leach_col_eff
 
-        LF_msw_ha = 119001  # Mg/ha
+        """
+        Annual Waste to landfill:
+            <200000 Mg/y small landfill: 1500 lb/yd3 (890 kg/m3);
+            >=200000 Mg/yr large landfill: 1800 lb/yds (1068 kg/m3)
+        Equation are from regression in the landfill paper (Wang et. al. 2021)
+        """
+        if self.InputData.LF_Op['annWaste']['amount'] < 200000:
+            self._LF_msw_ha = (
+                29806
+                * np.log(self.InputData.LF_Op['annWaste']['amount']
+                         * self.InputData.LF_Op['optime']['amount'])
+                - 263324)
+        else:
+            self._LF_msw_ha = (
+                73172
+                * np.log(self.InputData.LF_Op['annWaste']['amount']
+                         * self.InputData.LF_Op['optime']['amount'])
+                - 837452)
 
         # Mass balance of Leachate
         self._param3['Generated Leachate (m3/Mg MSW)'] = (
             (self._param3['Annual Precipitation (mm)'].values / 1000)  # mm to m
             * (self._param3['Frac Precip to Leachate'].values)
-            * (10000 / LF_msw_ha))  # Ha to m2
+            * (10000 / self._LF_msw_ha))  # Ha to m2
 
         self._param3['Collected Leachate (m3/Mg MSW)'] = (
             self._param3['Generated Leachate (m3/Mg MSW)'].values
@@ -466,86 +503,24 @@ class LF(ProcessModel):
             - self._param3['Treated Leachate (m3/Mg MSW)'].values
             - self._param3['Recirculated Leachate (m3/Mg MSW)'].values)
 
-        # COD and BOD slope
-        BOD_slope = np.zeros(n_lcht)
-        fltr_1 = self._param3['year'].values <= self.InputData.BOD['LF_BOD2']['amount']
-        fltr_2 = self._param3['year'].values <= self.InputData.BOD['LF_BOD4']['amount']
-        fltr_3 = self._param3['year'].values <= self.InputData.BOD['LF_BOD6']['amount']
-
-        BOD_slope[fltr_3] = (
-            (self.InputData.BOD['LF_BOD_con6']['amount'] - self.InputData.BOD['LF_BOD_con5']['amount'])
-            / (self.InputData.BOD['LF_BOD6']['amount'] - self.InputData.BOD['LF_BOD4']['amount']))
-        BOD_slope[fltr_2] = (
-            (self.InputData.BOD['LF_BOD_con4']['amount'] - self.InputData.BOD['LF_BOD_con3']['amount'])
-            / (self.InputData.BOD['LF_BOD4']['amount'] - self.InputData.BOD['LF_BOD2']['amount']))
-        BOD_slope[fltr_1] = (
-            (self.InputData.BOD['LF_BOD_con2']['amount'] - self.InputData.BOD['LF_BOD_con1']['amount'])
-            / self.InputData.BOD['LF_BOD2']['amount'])
-
-        self._param3['Slope of BOD Concentration vs. Time (kg/L-yr)'] = BOD_slope
-
-        COD_slope = np.zeros(n_lcht)
-        fltr_4 = self._param3['year'].values <= self.InputData.COD['LF_COD2']['amount']
-        fltr_5 = self._param3['year'].values <= self.InputData.COD['LF_COD4']['amount']
-        fltr_6 = self._param3['year'].values <= self.InputData.COD['LF_COD6']['amount']
-
-        COD_slope[fltr_6] = (
-            (self.InputData.COD['LF_COD_con6']['amount'] - self.InputData.COD['LF_COD_con5']['amount'])
-            / (self.InputData.COD['LF_COD6']['amount'] - self.InputData.COD['LF_COD4']['amount']))
-        COD_slope[fltr_5] = (
-            (self.InputData.COD['LF_COD_con4']['amount'] - self.InputData.COD['LF_COD_con3']['amount'])
-            / (self.InputData.COD['LF_COD4']['amount'] - self.InputData.COD['LF_COD2']['amount']))
-        COD_slope[fltr_4] = (
-            (self.InputData.COD['LF_COD_con2']['amount'] - self.InputData.COD['LF_COD_con1']['amount'])
-            / self.InputData.COD['LF_COD2']['amount'])
-
-        self._param3['Slope of COD Concentration vs. Time (kg/L-yr)'] = COD_slope
-
         # Concentration of other effluents in leachate  (kg/L)
-        # Only COD and BOD concentrations are calculated, for the other ones, data is in the ('LF_Leachate_Coeff.xlsx')
+        self.lcht_conc = np.zeros((self._n_lcht, self.lcht_Qlty.shape[0]))
+        self.lcht_conc[:2, :] = self.lcht_Qlty['Stage 1 (0-2 years, mg/L)'].values
+        self.lcht_conc[2:10, :] = self.lcht_Qlty['Stage 2 (3-10 years, mg/L)'].values
+        self.lcht_conc[10:40, :] = self.lcht_Qlty['Stage 3 (11-40 years, mg/L)'].values
+        self.lcht_conc[40:100, :] = self.lcht_Qlty['Stage 4 (41-100 years, mg/L)'].values
+        self.lcht_conc /= 10**6  # mg/L -> kg/L
+
         self.lcht_conc = pd.DataFrame(
-            np.array([np.ones(n_lcht) * self.lcht_coef['Concentrations (kg/L)'][i] for i in self.lcht_coef.index]).T,
-            index=np.arange(n_lcht),
-            columns=self.lcht_coef['Emission'].values)
-
-        # Concentration of BOD and COD in leachate
-        BOD = np.zeros(n_lcht)
-        BOD[fltr_3] = (
-            BOD_slope[fltr_3] * (self._param3['year'].values[fltr_3] - self.InputData.BOD['LF_BOD4']['amount'])
-            + self.InputData.BOD['LF_BOD_con5']['amount'])
-
-        BOD[fltr_2] = (
-            BOD_slope[fltr_2] * (self._param3['year'].values[fltr_2] - self.InputData.BOD['LF_BOD2']['amount'])
-            + self.InputData.BOD['LF_BOD_con3']['amount'])
-
-        BOD[fltr_1] = (
-            BOD_slope[fltr_1] * (- self._param3['year'].values[fltr_1])
-            + self.InputData.BOD['LF_BOD_con1']['amount'])
-        self.lcht_conc['BOD5, Biological Oxygen Demand'] = BOD
-
-
-
-        COD = np.full(n_lcht, self.InputData.COD['LF_COD_con7']['amount'])
-        COD[fltr_6] = (
-            COD_slope[fltr_6] * (self._param3['year'].values[fltr_6] - self.InputData.COD['LF_COD4']['amount'])
-            + self.InputData.COD['LF_COD_con5']['amount'])
-
-        COD[fltr_5] = (
-            COD_slope[fltr_5] * (self._param3['year'].values[fltr_5] - self.InputData.COD['LF_COD2']['amount'])
-            + self.InputData.COD['LF_COD_con3']['amount'])
-
-        COD[fltr_4] = (
-            COD_slope[fltr_4] * (- self._param3['year'].values[fltr_4])
-            + self.InputData.COD['LF_COD_con1']['amount'])
-
-        self.lcht_conc['COD, Chemical Oxygen Demand'] = COD
+            self.lcht_conc,
+            columns=self.lcht_Qlty['Emission'].values)
 
         # Fugitive Leachate Emissions (leaks through liner) (kg/Mg MSW)
         self._Fugitive_Leachate = pd.Series(
             (self.lcht_conc.values.T
              * self._param3['Fugitive Leachate  (m3/Mg MSW)'].values).sum(axis=1)
             * 1000,  # m3 -> L
-            index=self.lcht_coef['Emission'].values)
+            index=self.lcht_Qlty['Emission'].values)
 
         # Post-treatment effluent emissions (kg/Mg MSW)
         self._Effluent = pd.Series(
@@ -553,22 +528,43 @@ class LF(ProcessModel):
                 np.multiply(
                     self.lcht_conc.values.T,
                     self._param3['Treated Leachate (m3/Mg MSW)'].values).sum(axis=1),
-                1 - self.lcht_coef['Removal Efficiency (%)'].values / 100) * 1000,
-            index=self.lcht_coef['Emission'].values)
+                1 - self.lcht_Qlty['Removal Efficiency (%)'].values / 100) * 1000,
+            index=self.lcht_Qlty['Emission'].values)
+
+
+
+        self.lcht_Alloc = np.zeros((len(self.Index), self.lcht_Qlty.shape[0]))
+        comp = self.process_data['Assumed_Comp'].values
+        sld_cont = (1 - self.Material_Properties['Moisture Content'] / 100)
+        sld_msw = (comp * sld_cont).sum()
+        sld_alloc = sld_cont / sld_msw
+        for i, j in enumerate(self.lcht_Qlty['Allocation_base'].values):
+            if j == 'Solid Content':
+                self.lcht_Alloc[:, i] = sld_alloc
+            elif j == 'Nitrogen Content' or j == 'Phosphorus Content':
+                m = self.Material_Properties[j].values * sld_cont * self.process_data['Degrades'].values
+                self.lcht_Alloc[:, i] = m / (m * comp).sum()
+            else:
+                m = self.Material_Properties[j].values * sld_cont
+                self.lcht_Alloc[:, i] = m / (m * comp).sum()
+
+        self.lcht_Alloc = pd.DataFrame(self.lcht_Alloc,
+                                       columns=self.lcht_Qlty['Emission'].values,
+                                       index=self.Index)
 
         self.Surface_water_emission = pd.DataFrame(
             self.lcht_Alloc.values * self._Effluent.values,
             index=self.Index,
-            columns=self.lcht_coef['Emission'].values + "_ to SW")
+            columns=self.lcht_Qlty['Emission'].values + "_ to SW")
 
-        self._key2 = dict(zip(self.Surface_water_emission.columns, self.lcht_coef['Surface_water'].values))
+        self._key2 = dict(zip(self.Surface_water_emission.columns, self.lcht_Qlty['Surface_water'].values))
 
         self.Ground_water_emission = pd.DataFrame(
             self.lcht_Alloc.values * self._Fugitive_Leachate.values,
             index=self.Index,
-            columns=self.lcht_coef['Emission'].values + "_ to GW")
+            columns=self.lcht_Qlty['Emission'].values + "_ to GW")
 
-        self._key3 = dict(zip(self.Ground_water_emission.columns, self.lcht_coef['Ground_water'].values))
+        self._key3 = dict(zip(self.Ground_water_emission.columns, self.lcht_Qlty['Ground_water'].values))
 
         # Electricity Consumption for Leachate Treatment
         BOD_removed = (sum(self.lcht_conc['BOD5, Biological Oxygen Demand'].values
@@ -613,7 +609,7 @@ class LF(ProcessModel):
                         * (self.InputData.Leachate['LF_eff_mtls']['amount'] / 100)
                         / (1 - self.InputData.Leachate['LF_eff_mtls']['amount'] / 100))
 
-        LF_sldg_tss = (self._Effluent['Suspended solids, unspecified']
+        LF_sldg_tss = (self._Effluent['TSS']
                        * (self.InputData.Leachate['LF_eff_TSS']['amount'] / 100)
                        / (1 - self.InputData.Leachate['LF_eff_TSS']['amount'] / 100))
 
@@ -629,12 +625,10 @@ class LF(ProcessModel):
 
         self.sludge['sludge generated from metals removal'] = (
             self.lcht_Alloc[metals].values
-            * (self._Effluent[metals].values
-               * (self.InputData.Leachate['LF_eff_mtls']['amount'] / 100)
-               / (1 - self.InputData.Leachate['LF_eff_mtls']['amount'] / 100))).sum(axis=1)
+            * LF_sldg_mtls).sum(axis=1)
 
         self.sludge['sludge generated from suspended solids removal'] = (
-            self.lcht_Alloc['Suspended solids, unspecified'].values
+            self.lcht_Alloc['TSS'].values
             * LF_sldg_tss)
 
         self.sludge['total sludge generated'] = (
@@ -689,13 +683,13 @@ class LF(ProcessModel):
         """
         HDPE_Pipe = 0.0022  # m/Mg
         self.LCI.add('HDPE_Pipe', HDPE_Pipe)
-        
+
         """
         PVC pipe for final cover and closure system
-        """ 
+        """
         PVC_Pipe = 0.0011  # m/Mg
         self.LCI.add('PVC_Pipe', PVC_Pipe)
-        
+
         """
         Steal
         """
@@ -706,13 +700,13 @@ class LF(ProcessModel):
         Concrete
         """
         Concrete = 0.0071  # kg/Mg
-        self.LCI.add('Concrete', Concrete)        
-        
+        self.LCI.add('Concrete', Concrete)
+
         """
         Asphalt
         """
         Asphalt = 0.0850  # kg/Mg
-        self.LCI.add('Asphalt', Asphalt)      
+        self.LCI.add('Asphalt', Asphalt)
 
 
         """
@@ -720,7 +714,7 @@ class LF(ProcessModel):
         """
         Sand = 33.751  # kg/Mg
         self.LCI.add('Sand', Sand)
-        
+
         """
         Gravel
         """
@@ -732,7 +726,7 @@ class LF(ProcessModel):
         """
         Clay = 57.115  # kg/Mg
         self.LCI.add('Clay', Clay)
-        
+
         """
         Building
         """
@@ -771,6 +765,24 @@ class LF(ProcessModel):
             'Gravel': ('Technosphere', 'Gravel'),
             'Clay': ('Technosphere', 'Clay'),
             'Building': ('Technosphere', 'Building'),}
+
+    # Calc function _ Do all the calculations
+    def calc(self):
+        self._Cal_LFG_Col_Ox()
+        self._Cal_LFG()
+        self._Leachate()
+        self._Material_energy_use()
+        self._Add_cost()
+
+    # setup for Monte Carlo simulation
+    def setup_MC(self, seed=None):
+        self.InputData.setup_MC(seed)
+
+    # Calculate based on the generated numbers
+    def MC_calc(self):
+        input_list = self.InputData.gen_MC()
+        self.calc()
+        return input_list
 
     # Report
     def report(self):
@@ -825,23 +837,6 @@ class LF(ProcessModel):
         self.LF["Biosphere"] = self.Biosphere
         return self.LF
 
-    # Calc function _ Do all the calculations
-    def calc(self):
-        self._Cal_LFG_Col_Ox()
-        self._Cal_LFG()
-        self._Leachate()
-        self._Material_energy_use()
-        self._Add_cost()
-
-    # setup for Monte Carlo simulation
-    def setup_MC(self, seed=None):
-        self.InputData.setup_MC(seed)
-
-    # Calculate based on the generated numbers
-    def MC_calc(self):
-        input_list = self.InputData.gen_MC()
-        self.calc()
-        return input_list
 
 # LCI class
 class LCI():
