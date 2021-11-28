@@ -36,12 +36,9 @@ Life-Cylce Process Models for swolfpy (swolfpy_processmodels)
         :alt: DOI
 
 * Free software: GNU GENERAL PUBLIC LICENSE V2
+* Website: https://swolfpy-project.github.io
 * Documentation: https://swolfpy.readthedocs.io.
 * Repository: https://github.com/SwolfPy-Project/swolfpy-processmodels
-* Other links: 
-
-  * https://go.ncsu.edu/swolfpy
-  * https://jwlevis.wixsite.com/swolf
 
 
 Features
