@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Spyder Editor
-
-This is a temporary script file.
+@author: msardar2
 """
 import pandas as pd
 from swolfpy_inputdata import SF_Col_Input
@@ -14,11 +12,16 @@ import warnings
 
 class SF_Col(ProcessModel):
     Process_Type = 'Collection'
-    def __init__(self, process_name, Collection_scheme, Treatment_processes=None,
-                 Distance=None, CommonDataObjct=None, input_data_path=None):
+    def __init__(self, process_name, Collection_scheme,
+                 Treatment_processes=None,
+                 Distance=None,
+                 CommonDataObjct=None,
+                 input_data_path=None):
         super().__init__(process_name, CommonDataObjct)
 
-        self.InputData= SF_Col_Input(input_data_path, process_name=self.process_name, CommonDataObjct=CommonDataObjct)
+        self.InputData = SF_Col_Input(input_data_path,
+                                      process_name=self.process_name,
+                                      CommonDataObjct=CommonDataObjct)
         self.process_name = process_name
 
         if Treatment_processes:
@@ -28,10 +31,10 @@ class SF_Col(ProcessModel):
             else:
                 raise Exception('User should define both Distance and Treatment_processes together')
         else:
-            self.Treat_proc =False
+            self.Treat_proc = False
 
         self.process_data = self.InputData.process_data
-        self.col= self.InputData.col
+        self.col = self.InputData.col
         self.col_schm = Collection_scheme
 
     @staticmethod
@@ -72,10 +75,15 @@ class SF_Col(ProcessModel):
                 self.col_schm[k] = v/contribution
 
     def calc_composition(self):
-        self._col_schm = {'RWC':{'Contribution':0,'separate_col':{'SSR':0, 'DSR':0, 'MSR':0, 'MSRDO':0, 'SSYW':0, 'SSO':0, 'SSYWDO':0}},
-          'ORG_DryRes':{'Contribution':0,'separate_col':{'SSR':0, 'DSR':0, 'MSR':0, 'MSRDO':0, 'SSYW':0, 'SSO':0, 'SSYWDO':0}},
-          'REC_WetRes':{'Contribution':0,'separate_col':{'SSR':0, 'DSR':0, 'MSR':0, 'MSRDO':0, 'SSYW':0, 'SSO':0, 'SSYWDO':0}},
-          'MRDO':{'Contribution':0,'separate_col':{'SSR':0, 'DSR':0, 'MSR':0, 'MSRDO':0, 'SSYW':0, 'SSO':0, 'SSYWDO':0}}}
+        self._col_schm = {
+            'RWC': {'Contribution': 0,
+                    'separate_col':{'SSR': 0, 'DSR': 0, 'MSR': 0, 'MSRDO': 0, 'SSYW': 0, 'SSO': 0, 'SSYWDO': 0}},
+            'ORG_DryRes': {'Contribution': 0,
+                           'separate_col': {'SSR': 0, 'DSR': 0, 'MSR': 0, 'MSRDO': 0, 'SSYW': 0, 'SSO': 0, 'SSYWDO': 0}},
+            'REC_WetRes': {'Contribution': 0,
+                           'separate_col': {'SSR': 0, 'DSR': 0, 'MSR': 0, 'MSRDO': 0, 'SSYW': 0, 'SSO': 0, 'SSYWDO': 0}},
+            'MRDO': {'Contribution': 0,
+                     'separate_col': {'SSR': 0, 'DSR': 0, 'MSR': 0, 'MSRDO': 0, 'SSYW': 0, 'SSO': 0, 'SSYWDO': 0}}}
 
         for k, v in self.col_schm.items():
             if 'RWC' in k:
@@ -92,19 +100,18 @@ class SF_Col(ProcessModel):
         for k, v in self.col_schm.items():
             if v > 0:
                 if k[1] not in ['N/A', 'ORG_DryRes', 'REC_WetRes']:
-                    self._col_schm[k[0]]['separate_col'][k[1]] += v/self._col_schm[k[0]]['Contribution']
+                    self._col_schm[k[0]]['separate_col'][k[1]] += v / self._col_schm[k[0]]['Contribution']
                 if k[2] not in ['N/A', 'ORG_DryRes', 'REC_WetRes']:
-                    self._col_schm[k[0]]['separate_col'][k[2]] += v/self._col_schm[k[0]]['Contribution']
+                    self._col_schm[k[0]]['separate_col'][k[2]] += v / self._col_schm[k[0]]['Contribution']
 
         # Single Family Residential Waste Generation Rate (kg/household-week)
-        g_res = 7*self.InputData.Col['res_per_dwel']['amount']*self.InputData.Col['res_gen']['amount']
+        g_res = 7 * self.InputData.Col['res_per_dwel']['amount'] * self.InputData.Col['res_gen']['amount']
         gen_per_week = g_res * self.process_data['Comp']
-        total_waste_gen = g_res * self.InputData.Col['houses_res']['amount'] * 52 /1000
-
+        total_waste_gen = g_res * self.InputData.Col['houses_res']['amount'] * 52 / 1000
 
         # Check for Leave Vaccum
         self.process_data['LV'] = 0
-        if self.InputData.Col['Leaf_vacuum']['amount']==1:
+        if self.InputData.Col['Leaf_vacuum']['amount'] == 1:
             LV_gen = (self.process_data.loc['Yard_Trimmings_Leaves', 'Comp']
                       * self.InputData.Col['res_gen']['amount'] * 365)
 
@@ -125,18 +132,19 @@ class SF_Col(ProcessModel):
                                     / self.InputData.Col['LV_serv_pd']['amount'])
 
         # Total fraction where this service is offered
-        self.col_proc = {'RWC': self._col_schm['RWC']['Contribution'],
-                         'ORG': self._col_schm['ORG_DryRes']['Contribution'],
-                         'DryRes': self._col_schm['ORG_DryRes']['Contribution'],
-                         'REC': self._col_schm['REC_WetRes']['Contribution'],
-                         'WetRes': self._col_schm['REC_WetRes']['Contribution'],
-                         'MRDO': self._col_schm['MRDO']['Contribution']}
+        self.col_proc = {
+            'RWC': self._col_schm['RWC']['Contribution'],
+            'ORG': self._col_schm['ORG_DryRes']['Contribution'],
+            'DryRes': self._col_schm['ORG_DryRes']['Contribution'],
+            'REC': self._col_schm['REC_WetRes']['Contribution'],
+            'WetRes': self._col_schm['REC_WetRes']['Contribution'],
+            'MRDO': self._col_schm['MRDO']['Contribution']}
 
         ### SSO_HC contribution
         for j in ['RWC', 'ORG_DryRes', 'REC_WetRes', 'MRDO']:
             if self.InputData.Col['HC_partic']['amount'] > 0:
                 self._col_schm[j]['separate_col']['SSO_HC'] = 1
-            else:    
+            else:
                 self._col_schm[j]['separate_col']['SSO_HC'] = 0
 
         for i in ['LV', 'SSR', 'DSR', 'MSR', 'MSRDO', 'SSYW', 'SSO', 'SSO_HC', 'SSYWDO']:
@@ -162,11 +170,11 @@ class SF_Col(ProcessModel):
         self.mass['LV'] = (g_res * self.process_data['Comp']
                            * self.process_data['LV']
                            * self.P_use['LV'])
-        
+
         ### SSO_HC mass
         if self.InputData.Col['HC_partic']['amount'] > 0:
             HC_frac = self.InputData.Col['HC_partic']['amount'] / 100
-            c = ['SSR','DSR','MSR','SSYW','SSO', 'ORG','REC','SSYWDO','MSRDO']
+            c = ['SSR', 'DSR', 'MSR', 'SSYW', 'SSO', 'ORG', 'REC', 'SSYWDO', 'MSRDO']
             OFMSW = ['Yard_Trimmings_Leaves',
                      'Yard_Trimmings_Grass',
                      'Yard_Trimmings_Branches',
@@ -174,82 +182,110 @@ class SF_Col(ProcessModel):
             self.mass.loc[OFMSW, 'SSO_HC'] = (g_res
                                               * self.process_data['Comp'][OFMSW]
                                               * HC_frac)
-            self.mass.loc['Yard_Trimmings_Leaves', 'SSO_HC'] *= (1 - self.process_data.loc['Yard_Trimmings_Leaves',
-                                                                                           'LV'])
+            self.mass.loc['Yard_Trimmings_Leaves', 'SSO_HC'] *= (
+                    1 - self.process_data.loc['Yard_Trimmings_Leaves', 'LV'])
             self.mass.loc[OFMSW, c] *= (1 - HC_frac)
 
-
         def separate_col_mass(j):
-            mass = pd.Series(data=np.zeros(len(self.mass)) ,index=self.mass.index)
+            mass = pd.Series(data=np.zeros(len(self.mass)),
+                             index=self.mass.index)
             for i in ['SSR', 'DSR', 'MSR', 'LV', 'SSYW', 'SSO', 'SSO_HC', 'SSYWDO', 'MSRDO']:
                 mass += self.mass[i] * self._col_schm[j]['separate_col'][i]
             return mass
 
         # Calculating the residual waste after separate collection
-        for j in ['RWC','MRDO']:
-            self.mass[j]= (g_res * self.process_data[j] * self.process_data['Comp'] - separate_col_mass(j))* self.P_use[j]
+        for j in ['RWC', 'MRDO']:
+            self.mass[j]= (
+                g_res
+                * self.process_data[j]
+                * self.process_data['Comp']
+                - separate_col_mass(j)) * self.P_use[j]
 
         # ORG_DryRes
         index_with_error = self.mass['ORG'] + separate_col_mass('ORG_DryRes') > gen_per_week
-        self.mass.loc[index_with_error, 'ORG'] = gen_per_week[index_with_error] - separate_col_mass('ORG_DryRes')[index_with_error]
-        self.mass['DryRes']= (g_res * self.process_data['DryRes'] * self.process_data['Comp'] - separate_col_mass('ORG_DryRes') - self.mass['ORG'])* self.P_use['DryRes']
+
+        self.mass.loc[index_with_error, 'ORG'] = (
+            gen_per_week[index_with_error]
+            - separate_col_mass('ORG_DryRes')[index_with_error])
+
+        self.mass['DryRes']= (
+            (g_res
+             * self.process_data['DryRes']
+             * self.process_data['Comp']
+             - separate_col_mass('ORG_DryRes')
+             - self.mass['ORG']) * self.P_use['DryRes'])
 
         # REC_WetRes
         index_with_error = self.mass['REC'] + separate_col_mass('REC_WetRes') > gen_per_week
-        self.mass.loc[index_with_error, 'REC'] = gen_per_week[index_with_error] - separate_col_mass('REC_WetRes')[index_with_error]
-        self.mass['WetRes'] = (g_res * self.process_data['WetRes'] * self.process_data['Comp'] - separate_col_mass('REC_WetRes') - self.mass['REC'])* self.P_use['WetRes']
+
+        self.mass.loc[index_with_error, 'REC'] = (
+            gen_per_week[index_with_error]
+            - separate_col_mass('REC_WetRes')[index_with_error])
+
+        self.mass['WetRes'] = (
+            g_res
+            * self.process_data['WetRes']
+            * self.process_data['Comp']
+            - separate_col_mass('REC_WetRes')
+            - self.mass['REC']) * self.P_use['WetRes']
 
         #Annual Mass Flows (Mg/yr)
         self.col_massflow = pd.DataFrame(index=self.Index)
         for i in columns:
             self.col_massflow[i] = (self.mass[i]
                                     * self.InputData.Col['houses_res']['amount']
-                                    * 52/1000 * self.col_proc[i])
+                                    * 52 / 1000
+                                    * self.col_proc[i])
 
         # Check for negative mass flows
-        if (self.col_massflow.values<0).any().any():
-            #raise Exception(f'Negative mass flows in collection model [{self.process_name}]!')
+        if (self.col_massflow.values < 0).any().any():
+            # raise Exception(f'Negative mass flows in collection model [{self.process_name}]!')
             warnings.warn('Negative mass flows in collection model [{self.process_name}]!')
 
-        #Check generated mass = Collected mass
-        ratio = sum(self.col_massflow.sum())/total_waste_gen
+        # Check generated mass = Collected mass
+        ratio = sum(self.col_massflow.sum()) / total_waste_gen
         if ratio > 1.01 or ratio < 0.99:
-            #raise Exception(f'Mass balance error in collection model [{self.process_name}]!')
+            # raise Exception(f'Mass balance error in collection model [{self.process_name}]!')
             warnings.warn(f'Mass balance error in collection model [{self.process_name}]!')
 
-        #Volume Composition of each collection process for each sector
+        # Volume Composition of each collection process for each sector
         mass_to_cyd = self.process_data['Bulk_Density'].apply(lambda x: 1/x*1.30795 if x >0 else 0)
         for i in ['RWC','SSR','DSR','MSR','LV','SSYW', 'SSO', 'MRDO','SSYWDO','MSRDO']:
-            vol = sum(self.mass[i]*mass_to_cyd)  # Unit kg/cyd
+            vol = sum(self.mass[i] * mass_to_cyd)  # Unit kg/cyd
             if vol > 0 :
-                self.col.loc[i,'den_c'] = sum(self.mass[i]*2.205/ vol)  # Unit lb/cyd
+                self.col.loc[i, 'den_c'] = sum(self.mass[i] * 2.205 / vol)  # Unit lb/cyd
             else:
-                self.col.loc[i,'den_c'] = 0
-        for i,j in [('ORG','DryRes'),('REC','WetRes')]:
-            vol = sum((self.mass[i]+self.mass[j])*mass_to_cyd)  # Unit kg/cyd
+                self.col.loc[i, 'den_c'] = 0
+        for i,j in [('ORG', 'DryRes'), ('REC', 'WetRes')]:
+            vol = sum((self.mass[i] + self.mass[j]) * mass_to_cyd)  # Unit kg/cyd
             if vol > 0 :
-                self.col.loc[i,'den_c'] = sum((self.mass[i]+self.mass[j])*2.205/ vol)  # Unit lb/cyd
+                self.col.loc[i, 'den_c'] = sum(
+                    (self.mass[i] + self.mass[j])
+                    * 2.205
+                    / vol)  # Unit lb/cyd
             else:
-                self.col.loc[i,'den_c'] = 0
+                self.col.loc[i, 'den_c'] = 0
 
     def find_destination(self, product, Treatment_processes):
-        destination={}
+        destination = {}
         for P in Treatment_processes:
             if product in Treatment_processes[P]['input_type']:
-                destination[P] = self.Distance.Distance[(self.process_name,P)]['Heavy Duty Truck'] / 1.60934 # Convert the distance from km to mile
+                destination[P] = (
+                    self.Distance.Distance[(self.process_name, P)]['Heavy Duty Truck']
+                    / 1.60934) # Convert the distance from km to mile
         return destination
 
-    ### calculating LCI and cost for different locations
+    # calculating LCI and cost for different locations
     def calc_destin(self):
         if self.Treat_proc:
             self.dest = {}
-            self.result_destination={}
+            self.result_destination = {}
             for i in self.CommonData.Collection_Index:
-                self.dest[i]= self.find_destination(i,self.Treat_proc)
+                self.dest[i] = self.find_destination(i, self.Treat_proc)
                 self.result_destination[i] = {}
 
             # Number of times we need to run the collection
-            n_run= max([len(self.dest[i]) for i in self.dest.keys()])
+            n_run = max([len(self.dest[i]) for i in self.dest.keys()])
 
             for i in range(n_run):
                 for j in ['RWC', 'SSR', 'DSR', 'MSR', 'MSRDO', 'LV', 'SSYW', 'SSO', 'SSYWDO', 'MRDO', 'SSYWDO', 'MSRDO', 'ORG', 'REC']:
@@ -257,8 +293,6 @@ class SF_Col(ProcessModel):
                         self.col['Drf'][j] = self.dest[j][list(self.dest[j].keys())[i]] # Distance btwn collection route and destination
                         self.col['Dfg'][j] = (self.dest[j][list(self.dest[j].keys())[i]] + # Distance between destination and garage
                                               self.col['Dgr'][j])
-
-
 
                 self.calc_lci()
                 for j in self.dest.keys():
@@ -277,33 +311,42 @@ class SF_Col(ProcessModel):
             self.result_destination={}
 
     def calc_lci(self):
-        #Selected compartment compaction density  (lb/yd3)
-        #Override calculated density den_c and use an average assumed in-truck density
+        # Selected compartment compaction density  (lb/yd3)
+
+        # Override calculated density den_c and use an average assumed in-truck density
         self.col['d_msw']= self.col[['den_asmd','den_c']].apply(lambda x: x[0] if x[0]>0 else x[1],axis=1)
 
-        #Distance between service stops, adjusted (miles)
+        # Distance between service stops, adjusted (miles)
         self.col['Dbtw'] = self.col['D100'] / self.col['Prtcp']
 
-        #Travel time between service stops, adjusted based on participation                (min/stop)
+        # Travel time between service stops, adjusted based on participation                (min/stop)
         self.col['Tbtw'] = self.col['Dbtw'] / self.col['Vbet'] * 60
-        #Travel time btwn route and disposal fac.       (min/trip)
+
+        # Travel time btwn route and disposal fac.       (min/trip)
         self.col['Trf'] = self.col['Drf'] / self.col['Vrf'] * 60
-        #Time from grg to 1st collection route     (min/day-vehicle)
+
+        # Time from grg to 1st collection route     (min/day-vehicle)
         self.col['Tgr'] = self.col['Dgr'] / self.col['Vgr'] * 60
-        #Time from disposal fac. to garage    (min/day-vehicle)
+
+        # Time from disposal fac. to garage    (min/day-vehicle)
         self.col['Tfg'] = self.col['Dfg'] / self.col['Vfg'] * 60
 
-        for i in ['RWC', 'SSR', 'DSR', 'MSR', 'LV', 'SSYW', 'SSO', 'MRDO', 'SSYWDO', 'MSRDO']:
-            self.col.loc[i,'option_frac'] = self.col_proc[i]
-            self.col.loc[i,'mass'] = sum(self.mass[i])
-        # Revising mass of ORG_DryRes and REC_WetRec
-        for i,j in [('ORG','DryRes'),('REC','WetRes')]:
-            self.col.loc[i,'mass'] = sum(self.mass[i] + self.mass[j])
-        # Revising mass of LV collection - as it happens only in LV_serv_pd
-        self.col.loc['LV','mass'] = self.col.loc['LV','mass']*52/self.InputData.Col['LV_serv_pd']['amount']
+        for i in ['RWC', 'SSR', 'DSR', 'MSR', 'LV',
+                  'SSYW', 'SSO', 'MRDO', 'SSYWDO', 'MSRDO']:
+            self.col.loc[i, 'option_frac'] = self.col_proc[i]
+            self.col.loc[i, 'mass'] = sum(self.mass[i])
 
-        ### Calculations for collection vehicle activities
-        #houses per trip (Volume limited) and (mass limited)
+        # Revising mass of ORG_DryRes and REC_WetRec
+        for i,j in [('ORG', 'DryRes'), ('REC', 'WetRes')]:
+            self.col.loc[i, 'mass'] = sum(self.mass[i] + self.mass[j])
+
+        # Revising mass of LV collection - as it happens only in LV_serv_pd
+        self.col.loc['LV', 'mass'] = (
+            self.col.loc['LV', 'mass'] * 52
+            / self.InputData.Col['LV_serv_pd']['amount'])
+
+        # Calculations for collection vehicle activities
+        # houses per trip (Volume limited) and (mass limited)
         for i in ['RWC', 'SSR', 'DSR', 'MSR', 'SSYW', 'SSO', 'ORG', 'REC', 'LV']:
             if not self.col.loc[i,'mass'] > 0:
                 self.col.loc[i,'Ht_v']=0
@@ -317,41 +360,59 @@ class SF_Col(ProcessModel):
             else:
                 self.col.loc[i,'Ht'] = self.col.loc[i,'Ht_v']
 
-        #time per trip (min/trip) -- collection+travel+unload time
+        # time per trip (min/trip) -- collection+travel+unload time
         self.col['Tc'] = self.col['Tbtw']*(self.col['Ht']/self.col['HS']-1)+self.col['TL']*self.col['Ht']/self.col['HS']+2*self.col['Trf']+self.col['S']
 
-        #trips per day per vehicle (trip/day-vehicle)
+        # trips per day per vehicle (trip/day-vehicle)
         self.col['RD'] =  (self.col['WV']*60-(self.col['F1_']+self.col['F2_']+self.col['Tfg'])-0.5*(self.col['Trf']+self.col['S']))/self.col['Tc']
-        if any(self.col['RD']<0):
+        if any(self.col['RD'] < 0):
             raise Exception("Travelling time is too long that the truck cannot make a loop trip in one day!")
 
-
-
-        #daily weight of refuse collected per vehicle (Mg/vehicle-day)
+        # daily weight of refuse collected per vehicle (Mg/vehicle-day)
         self.col['RefD'] = self.col['Ht'] * self.col['mass']/self.col['Fr']/1000 * self.col['RD']
 
-        #number of collection stops per day (stops/vehicle-day)
+        # number of collection stops per day (stops/vehicle-day)
         for i in ['RWC', 'SSR', 'DSR', 'MSR', 'SSYW', 'SSO', 'ORG', 'REC', 'LV']:
-            self.col['SD'] = self.col['Ht']*self.col['RD']/self.col['HS']
+            self.col['SD'] = self.col['Ht'] * self.col['RD'] / self.col['HS']
 
-        ### Calculations for collection vehicle activities  (Drop off)
+        # Calculations for collection vehicle activities  (Drop off)
         for i in ['MRDO', 'SSYWDO', 'MSRDO']:
-            #volume of recyclables deposited at drop-off site per week (cy/week-house)
-            self.col.loc[i,'Ht'] = sum(self.mass[i])*self.InputData.Col['houses_res']['amount']*self.col_proc[i]/0.4536 /self.col['d_msw'][i]
+            # volume of recyclables deposited at drop-off site per week (cy/week-house)
+            self.col.loc[i, 'Ht'] = (
+                    sum(self.mass[i])
+                    * self.InputData.Col['houses_res']['amount']
+                    * self.col_proc[i]
+                    / 0.4536
+                    / self.col['d_msw'][i])
 
-            #collection vehicle trips per week (trips/week)
-            self.col.loc[i,'DO_trip_week'] =  self.col['Ht'][i] / (self.col['Vt'][i]*self.col['Ut'][i])
+            # collection vehicle trips per week (trips/week)
+            self.col.loc[i, 'DO_trip_week'] = (
+                self.col['Ht'][i]
+                / (self.col['Vt'][i] * self.col['Ut'][i]))
 
-            #time per trip (min/trip) -- load+travel+unload time
-            self.col.loc[i,'Tc'] = self.col['TL'][i]+2*self.col['Trf'][i]+self.col['S'][i]
+            # time per trip (min/trip) -- load+travel+unload time
+            self.col.loc[i, 'Tc'] = self.col['TL'][i]+2*self.col['Trf'][i]+self.col['S'][i]
 
-            #trips per day per vehicle (trip/day-vehicle)
-            self.col.loc[i,'RD'] = (self.col['WV'][i]*60-(self.col['F1_'][i]+self.col['F2_'][i]+self.col['Tfg'][i]+self.col['Tgr'][i])+self.col['Trf'][i])/self.col['Tc'][i]
+            # trips per day per vehicle (trip/day-vehicle)
+            self.col.loc[i, 'RD'] = (
+                self.col['WV'][i] * 60
+                - (self.col['F1_'][i]
+                   + self.col['F2_'][i]
+                   + self.col['Tfg'][i]
+                   + self.col['Tgr'][i])
+                + self.col['Trf'][i]) / self.col['Tc'][i]
 
             #daily weight of refuse collected per vehicle (tons/day-vehicle)
-            self.col.loc[i,'RefD'] = self.col['Vt'][i]*self.col['Ut'][i]*self.col['d_msw'][i]*0.4536/1000*self.col['RD'][i]
+            self.col.loc[i, 'RefD'] = (
+                self.col['Vt'][i]
+                * self.col['Ut'][i]
+                * self.col['d_msw'][i]
+                * 0.4536
+                / 1000
+                * self.col['RD'][i])
+
             #number of collection stops per day (stops/vehicle-day) (1 stop per trip)
-            self.col.loc[i,'SD'] = self.col['RD'][i]
+            self.col.loc[i, 'SD'] = self.col['RD'][i]
 
         ### Daily collection vehicle activity times
         #loading time at collection stops (min/day-vehicle) & loading time at drop-off site (min/day-vehicle)
@@ -378,25 +439,33 @@ class SF_Col(ProcessModel):
         ### Daily fuel usage - Diesel
         for i in ['RWC', 'SSR', 'DSR', 'MSR', 'LV', 'SSYW', 'SSO',
                   'ORG', 'DryRes', 'REC', 'WetRes', 'MRDO', 'SSYWDO', 'MSRDO']:
-            if self.col.loc[i,'MPG_all'] != 0:
+            if self.col.loc[i, 'MPG_all'] != 0:
                 #from garage to first collection route (gallons/day-vehicle)
-                self.col.loc[i,'diesel_gr'] = self.col['Fract_Dies'][i] * self.col['Dgr'][i] /self.col['MPG_all'][i]
+                self.col.loc[i, 'diesel_gr'] = self.col['Fract_Dies'][i] * self.col['Dgr'][i] /self.col['MPG_all'][i]
+
                 #break time, if spent idling
                 self.col.loc[i,'diesel_idl'] = 0
+
                 #from first through last collection stop (gallons/day-vehicle)
                 if i in ['MRDO', 'SSYWDO', 'MSRDO']:
                     self.col.loc[i,'diesel_col'] = 0
                 else:
                     self.col.loc[i,'diesel_col'] = self.col['Fract_Dies'][i] * self.col['Dbtw'][i] * self.col['SD'][i] /self.col['MPG_all'][i]
+
                 #between disposal facility and route (gallons/day-vehicle)
                 self.col.loc[i,'diesel_rf'] = self.col['Fract_Dies'][i] * self.col['F_R'][i]/60 * self.col['Vrf'][i]  /self.col['MPG_all'][i]
+
                 #unloading at disposal facility (gallons/day-vehicle)
                 self.col.loc[i,'diesel_ud'] = 0
+
                 #from disposal facility to garage (gallons/day-vehicle)
                 self.col.loc[i,'diesel_fg'] = self.col['Fract_Dies'][i] * self.col['Dfg'][i] /self.col['MPG_all'][i]
+
             else:
                 self.col.loc[i,'diesel_gr'] = self.col['Fract_Dies'][i] * self.col['Dgr'][i]*((1-self.col['fDgr'][i])/self.col['MPG_urban'][i]+self.col['fDgr'][i]/self.col['MPG_highway'][i])
+
                 self.col.loc[i,'diesel_idl'] = self.col['Fract_Dies'][i] * (self.col['F1_'][i]*self.col['F1_idle'][i] + self.col['F2_'][i]*self.col['F2_idle'][i])/60 * self.col['GPH_idle_cv'][i]
+
                 if i in ['MRDO', 'SSYWDO', 'MSRDO']:
                     self.col.loc[i,'diesel_col'] = 0
                 else:
@@ -406,44 +475,107 @@ class SF_Col(ProcessModel):
                 self.col.loc[i,'diesel_ud'] = self.col['Fract_Dies'][i] * self.col['UD'][i] /60 * self.col['GPH_idle_cv'][i]
                 self.col.loc[i,'diesel_fg'] = self.col['Fract_Dies'][i] * self.col['Dfg'][i] *((1-self.col['fDfg'][i])/self.col['MPG_urban'][i] + self.col['fDfg'][i]/self.col['MPG_highway'][i])
 
-            if self.col_proc[i]==0:
-                self.col.loc[i,'FuelD'] =0
+            if self.col_proc[i] == 0:
+                self.col.loc[i, 'FuelD'] = 0
             else:
-                self.col.loc[i,'FuelD'] = self.col['diesel_gr'][i] + self.col['diesel_idl'][i] + self.col['diesel_col'][i] + self.col['diesel_rf'][i] + self.col['diesel_ud'][i] + self.col['diesel_fg'][i]
-        ### Daily fuel usage - CNG - diesel gal equivalent
+                self.col.loc[i, 'FuelD'] = (
+                    self.col['diesel_gr'][i]
+                    + self.col['diesel_idl'][i]
+                    + self.col['diesel_col'][i]
+                    + self.col['diesel_rf'][i]
+                    + self.col['diesel_ud'][i]
+                    + self.col['diesel_fg'][i])
+
+        # Daily fuel usage - CNG - diesel gal equivalent
         for i in ['RWC', 'SSR', 'DSR', 'MSR', 'LV', 'SSYW', 'SSO',
                   'ORG', 'DryRes', 'REC', 'WetRes', 'MRDO', 'SSYWDO', 'MSRDO']:
-            if self.col.loc[i,'MPG_all_CNG'] != 0:
-                #from garage to first collection route (gallons/day-vehicle)
-                self.col.loc[i,'CNG_gr'] = self.col['Fract_CNG'][i] * self.col['Dgr'][i] /self.col['MPG_all_CNG'][i]
-                #break time, if spent idling
-                self.col.loc[i,'CNG_idl'] = 0
-                #from first through last collection stop (diesel gal equivalent/day-vehicle)
-                if i in ['MRDO','SSYWDO','MSRDO']:
-                    self.col.loc[i,'CNG_col'] = 0
-                else:
-                    self.col.loc[i,'CNG_col'] = self.col['Fract_CNG'][i] * self.col['Dbtw'][i] * self.col['SD'][i] /self.col['MPG_all_CNG'][i]
-                #between disposal facility and route (diesel gal equivalent/day-vehicle)
-                self.col.loc[i,'CNG_rf'] = self.col['Fract_CNG'][i] * self.col['F_R'][i]/60 * self.col['Vrf'][i]  /self.col['MPG_all_CNG'][i]
-                #unloading at disposal facility (diesel gal equivalent/day-vehicle)
-                self.col.loc[i,'CNG_ud'] = 0
-                #from disposal facility to garage (diesel gal equivalent/day-vehicle)
-                self.col.loc[i,'CNG_fg'] = self.col['Fract_CNG'][i] * self.col['Dfg'][i] /self.col['MPG_all_CNG'][i]
-            else:
-                self.col.loc[i,'CNG_gr'] = self.col['Fract_CNG'][i] * self.col['Dgr'][i]*((1-self.col['fDgr'][i])/self.col['MPG_urban_CNG'][i]+self.col['fDgr'][i]/self.col['MPG_hwy_CNG'][i])
-                self.col.loc[i,'CNG_idl'] = self.col['Fract_CNG'][i] * (self.col['F1_'][i]*self.col['F1_idle'][i] + self.col['F2_'][i]*self.col['F2_idle'][i])/60 * self.col['GPH_idle_CNG'][i]
-                if i in ['MRDO','SSYWDO','MSRDO']:
-                    self.col.loc[i,'CNG_col'] = 0
-                else:
-                    self.col.loc[i,'CNG_col'] = self.col['Fract_CNG'][i] * self.col['Dbtw'][i] * self.col['SD'][i] /self.col['MPG_col_CNG'][i]
-                self.col.loc[i,'CNG_rf'] = self.col['Fract_CNG'][i] * self.col['F_R'][i]/60 * self.col['Vrf'][i]  *((1-self.col['fDrd'][i])/self.col['MPG_urban_CNG'][i] + self.col['fDrd'][i]/self.col['MPG_hwy_CNG'][i])
-                self.col.loc[i,'CNG_ud'] = self.col['Fract_CNG'][i] * self.col['UD'][i] /60 * self.col['GPH_idle_CNG'][i]
-                self.col.loc[i,'CNG_fg'] = self.col['Fract_CNG'][i] * self.col['Dfg'][i] *((1-self.col['fDfg'][i])/self.col['MPG_urban_CNG'][i] + self.col['fDfg'][i]/self.col['MPG_hwy_CNG'][i])
+            if self.col.loc[i, 'MPG_all_CNG'] != 0:
+                # from garage to first collection route (gallons/day-vehicle)
+                self.col.loc[i, 'CNG_gr'] = (
+                    self.col['Fract_CNG'][i]
+                    * self.col['Dgr'][i]
+                    / self.col['MPG_all_CNG'][i])
 
-            if self.col_proc[i]==0:
-                self.col.loc[i,'FuelD_CNG'] = 0
+                # break time, if spent idling
+                self.col.loc[i, 'CNG_idl'] = 0
+
+                # from first through last collection stop (diesel gal equivalent/day-vehicle)
+                if i in ['MRDO', 'SSYWDO', 'MSRDO']:
+                    self.col.loc[i, 'CNG_col'] = 0
+                else:
+                    self.col.loc[i, 'CNG_col'] = (
+                        self.col['Fract_CNG'][i]
+                        * self.col['Dbtw'][i]
+                        * self.col['SD'][i]
+                        / self.col['MPG_all_CNG'][i])
+
+                # between disposal facility and route (diesel gal equivalent/day-vehicle)
+                self.col.loc[i, 'CNG_rf'] = (
+                    self.col['Fract_CNG'][i]
+                    * self.col['F_R'][i] / 60
+                    * self.col['Vrf'][i] 
+                    / self.col['MPG_all_CNG'][i])
+
+                # unloading at disposal facility (diesel gal equivalent/day-vehicle)
+                self.col.loc[i, 'CNG_ud'] = 0
+
+                # from disposal facility to garage (diesel gal equivalent/day-vehicle)
+                self.col.loc[i, 'CNG_fg'] = (
+                    self.col['Fract_CNG'][i]
+                    * self.col['Dfg'][i]
+                    / self.col['MPG_all_CNG'][i])
             else:
-                self.col.loc[i,'FuelD_CNG'] = self.col['CNG_gr'][i] + self.col['CNG_idl'][i] + self.col['CNG_col'][i] + self.col['CNG_rf'][i] + self.col['CNG_ud'][i] + self.col['CNG_fg'][i]
+                self.col.loc[i, 'CNG_gr'] = (
+                    self.col['Fract_CNG'][i]
+                    * self.col['Dgr'][i]
+                    * ((1 - self.col['fDgr'][i])
+                       / self.col['MPG_urban_CNG'][i]
+                       + self.col['fDgr'][i]
+                       / self.col['MPG_hwy_CNG'][i]))
+
+                self.col.loc[i, 'CNG_idl'] = self.col['Fract_CNG'][i] * (self.col['F1_'][i]*self.col['F1_idle'][i] + self.col['F2_'][i]*self.col['F2_idle'][i])/60 * self.col['GPH_idle_CNG'][i]
+                
+                if i in ['MRDO', 'SSYWDO', 'MSRDO']:
+                    self.col.loc[i,'CNG_col'] = 0
+                else:
+                    self.col.loc[i,'CNG_col'] = (
+                        self.col['Fract_CNG'][i]
+                        * self.col['Dbtw'][i]
+                        * self.col['SD'][i]
+                        / self.col['MPG_col_CNG'][i])
+
+                self.col.loc[i,'CNG_rf'] = (
+                    self.col['Fract_CNG'][i]
+                    * self.col['F_R'][i] / 60
+                    * self.col['Vrf'][i]
+                    * ((1 - self.col['fDrd'][i])
+                       / self.col['MPG_urban_CNG'][i]
+                       + self.col['fDrd'][i]
+                       / self.col['MPG_hwy_CNG'][i]))
+
+                self.col.loc[i,'CNG_ud'] = (
+                    self.col['Fract_CNG'][i]
+                    * self.col['UD'][i] / 60
+                    * self.col['GPH_idle_CNG'][i])
+
+                self.col.loc[i,'CNG_fg'] = (
+                    self.col['Fract_CNG'][i]
+                    * self.col['Dfg'][i]
+                    * ((1 - self.col['fDfg'][i])
+                       / self.col['MPG_urban_CNG'][i]
+                       + self.col['fDfg'][i]
+                       / self.col['MPG_hwy_CNG'][i]))
+
+            if self.col_proc[i] == 0:
+                self.col.loc[i, 'FuelD_CNG'] = 0
+            else:
+                self.col.loc[i, 'FuelD_CNG'] = (
+                    self.col['CNG_gr'][i]
+                    + self.col['CNG_idl'][i]
+                    + self.col['CNG_col'][i]
+                    + self.col['CNG_rf'][i]
+                    + self.col['CNG_ud'][i]
+                    + self.col['CNG_fg'][i])
 
         ### ENERGY CONSUMPTION
         # Energy consumption by collection vehicles
