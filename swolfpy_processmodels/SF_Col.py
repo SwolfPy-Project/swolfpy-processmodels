@@ -35,7 +35,6 @@ class SF_Col(ProcessModel):
             self.Treat_proc = False
 
         self.process_data = self.InputData.process_data
-        self.col = self.InputData.col
         self.col_schm = Collection_scheme
 
     @staticmethod
@@ -76,6 +75,100 @@ class SF_Col(ProcessModel):
                 self.col_schm[k] = v / contribution
 
     def calc_composition(self):
+        # Creating the sel.col Data frame
+        col_data = np.zeros((14, 63))
+        col_data[:] = np.nan
+        col_columns = []
+        col_index = ['RWC', 'SSR', 'DSR', 'MSR', 'LV',
+                                       'SSYW', 'SSO', 'ORG', 'DryRes', 'REC',
+                                        'WetRes', 'MRDO', 'SSYWDO', 'MSRDO']
+        col_i = 0
+
+        for key, val in self.InputData.den_asmd.items():
+            col_data[col_index.index(key), col_i] = val['amount']
+        col_columns.append('den_asmd')
+        col_i += 1
+
+        for key, val in self.InputData.HS.items():
+            col_data[col_index.index(key), col_i] = val['amount']
+        col_columns.append('HS')
+        col_i += 1
+
+        for key, val in self.InputData.Prtcp.items():
+            col_data[col_index.index(key), col_i] = val['amount']
+        col_columns.append('Prtcp')
+        col_i += 1
+
+        for key, val in self.InputData.Fr.items():
+            col_data[col_index.index(key), col_i] = val['amount']
+        col_columns.append('Fr')
+        col_i += 1
+
+        for key, val in self.InputData.TL.items():
+            col_data[col_index.index(key), col_i] = val['amount']
+        col_columns.append('TL')
+        col_i += 1
+
+        for key, val in self.InputData.S.items():
+            col_data[col_index.index(key), col_i] = val['amount']
+        col_columns.append('S')
+        col_i += 1
+
+        for key, val in self.InputData.drv_col.items():
+            col_data[col_index.index(key), col_i] = val['amount']
+        col_columns.append('drv_col')
+        col_i += 1
+
+        for key, val in self.InputData.Nw.items():
+            col_data[col_index.index(key), col_i] = val['amount']
+        col_columns.append('Nw')
+        col_i += 1
+
+        for key, val in self.InputData.Rb.items():
+            col_data[col_index.index(key), col_i] = val['amount']
+        col_columns.append('Rb')
+        col_i += 1
+
+        for key, val in self.InputData.Col_Root.items():
+            col_data[:, col_i] = val['amount']
+            col_columns.append(key)
+            col_i += 1
+
+        for key, val in self.InputData.LCC.items():
+            col_data[:, col_i] = val['amount']
+            col_columns.append(key)
+            col_i += 1
+
+        for key, val in self.InputData.DropOff.items():
+            col_data[:, col_i] = val['amount']
+            col_columns.append(key)
+            col_i += 1
+
+        for key, val in self.InputData.Mpg.items():
+            col_data[:, col_i] = val['amount']
+            col_columns.append(key)
+            col_i += 1
+
+        for key, val in self.InputData.Speed.items():
+            col_data[:, col_i] = val['amount']
+            col_columns.append(key)
+            col_i += 1
+
+        for key in ['CD', 'WV', 'WP', 'wt_lim', 'max_weight', 'F1_', 'F1_idle',
+                    'F2_', 'F2_idle', 'bw', 'bv', 'Lt', 'Ut', 'Vt', 'Fract_CNG',
+                    'grg_area', 'off_area', 'grg_enrg', 'off_enrg', 'Lb']:
+            col_data[:, col_i] = self.InputData.Col[key]['amount']
+            col_columns.append(key)
+            col_i += 1
+
+        self.col = pd.DataFrame(data=col_data,
+                                columns=col_columns,
+                                index=['RWC', 'SSR', 'DSR', 'MSR', 'LV',
+                                       'SSYW', 'SSO', 'ORG', 'DryRes', 'REC',
+                                        'WetRes', 'MRDO', 'SSYWDO', 'MSRDO'])
+
+        self.col['Fract_Dies'] = 1 - self.InputData.Col['Fract_CNG']['amount']
+
         self._col_schm = {
             'RWC': {'Contribution': 0,
                     'separate_col':{'SSR': 0, 'DSR': 0, 'MSR': 0, 'MSRDO': 0, 'SSYW': 0, 'SSO': 0, 'SSYWDO': 0}},
@@ -696,7 +789,6 @@ class SF_Col(ProcessModel):
         self.col['FuelMg_CNG'] = FuelMg_CNG
 
         # Energy consumption by drop-off vehicles
-
         P_use_Seri = pd.Series(index=self.col.index)
         col_proc_Seri = pd.Series(index=self.col.index)
         self.col_proc
@@ -839,7 +931,7 @@ class SF_Col(ProcessModel):
         # Cost per ton of refuse collected - Cap+OM+bins ($/Mg)
         self.col['C_collection'] = (
             (self.col['C_house'] * 7 / 365)
-            / (self.mass.sum() / 1000))
+            / (self.mass.sum() / 1000)).replace([np.inf, np.nan], 0)
 
         # OUTPUT
         # Energy use is calculated for ORG and it is same with Dryres
