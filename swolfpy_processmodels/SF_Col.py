@@ -76,7 +76,7 @@ class SF_Col(ProcessModel):
 
     def calc_composition(self):
         # Creating the sel.col Data frame
-        col_data = np.zeros((14, 63))
+        col_data = np.zeros((14, 61), dtype=float)
         col_data[:] = np.nan
         col_columns = []
         col_index = ['RWC', 'SSR', 'DSR', 'MSR', 'LV',
@@ -87,11 +87,6 @@ class SF_Col(ProcessModel):
         for key, val in self.InputData.den_asmd.items():
             col_data[col_index.index(key), col_i] = val['amount']
         col_columns.append('den_asmd')
-        col_i += 1
-
-        for key, val in self.InputData.HS.items():
-            col_data[col_index.index(key), col_i] = val['amount']
-        col_columns.append('HS')
         col_i += 1
 
         for key, val in self.InputData.Prtcp.items():
@@ -112,11 +107,6 @@ class SF_Col(ProcessModel):
         for key, val in self.InputData.S.items():
             col_data[col_index.index(key), col_i] = val['amount']
         col_columns.append('S')
-        col_i += 1
-
-        for key, val in self.InputData.drv_col.items():
-            col_data[col_index.index(key), col_i] = val['amount']
-        col_columns.append('drv_col')
         col_i += 1
 
         for key, val in self.InputData.Nw.items():
@@ -165,7 +155,8 @@ class SF_Col(ProcessModel):
                                 columns=col_columns,
                                 index=['RWC', 'SSR', 'DSR', 'MSR', 'LV',
                                        'SSYW', 'SSO', 'ORG', 'DryRes', 'REC',
-                                        'WetRes', 'MRDO', 'SSYWDO', 'MSRDO'])
+                                        'WetRes', 'MRDO', 'SSYWDO', 'MSRDO'],
+                                dtype=float)
 
         self.col['Fract_Dies'] = 1 - self.InputData.Col['Fract_CNG']['amount']
 
@@ -487,8 +478,8 @@ class SF_Col(ProcessModel):
         # Time per trip (min/trip)
         # Collection
         self.col['Tc'] = (
-            self.col['Tbtw'].values * (self.col['Ht'].values / self.col['HS'].values - 1)  # collection travel
-            + self.col['TL'].values * self.col['Ht'].values / self.col['HS'].values  # collection loading
+            self.col['Tbtw'].values * (self.col['Ht'].values /self.InputData.Col['HS']['amount'] - 1)  # collection travel
+            + self.col['TL'].values * self.col['Ht'].values / self.InputData.Col['HS']['amount']  # collection loading
             + 2 * self.col['Trf'].values  # travel
             + self.col['S'].values)  # unload time
 
@@ -513,7 +504,7 @@ class SF_Col(ProcessModel):
         self.col['SD'] = (
             self.col['Ht'].values
             * self.col['RD'].values
-            / self.col['HS'].values)
+            / self.InputData.Col['HS']['amount'])
 
         # Calculations for collection vehicle activities (Drop off)
         for i in ['MRDO', 'SSYWDO', 'MSRDO']:

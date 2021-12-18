@@ -48,6 +48,18 @@ ProcessModelsMetaData['SF_Col']['Process_Type'] = 'Collection'
 ProcessModelsMetaData['SF_Col']['File'] = 'SF_Col.py'
 ProcessModelsMetaData['SF_Col']['InputType'] = []
 
+ProcessModelsMetaData['MF_Col'] = {}
+ProcessModelsMetaData['MF_Col']['Name'] = 'Multi-Family Collection'
+ProcessModelsMetaData['MF_Col']['Process_Type'] = 'Collection'
+ProcessModelsMetaData['MF_Col']['File'] = 'MF_Col.py'
+ProcessModelsMetaData['MF_Col']['InputType'] = []
+
+ProcessModelsMetaData['COM_Col'] = {}
+ProcessModelsMetaData['COM_Col']['Name'] = 'Commercial Collection'
+ProcessModelsMetaData['COM_Col']['Process_Type'] = 'Collection'
+ProcessModelsMetaData['COM_Col']['File'] = 'COM_Col.py'
+ProcessModelsMetaData['COM_Col']['InputType'] = []
+
 ProcessModelsMetaData['TS'] = {}
 ProcessModelsMetaData['TS']['Name'] = 'Transfer Station'
 ProcessModelsMetaData['TS']['Process_Type'] = 'Transfer_Station'

@@ -128,6 +128,20 @@ def test_SF_Col():
     LCA_model_helper(sp.SF_Col('SF_test', Collection_scheme=col_scheme))
 
 
+def test_MF_Col():
+    assert sp.MF_Col.Process_Type == 'Collection'
+    col_scheme = sp.MF_Col.scheme()
+    col_scheme[('RWC', 'SSYW', 'SSR')] = 1
+    LCA_model_helper(sp.MF_Col('MF_test', Collection_scheme=col_scheme))
+
+
+def test_COM_Col():
+    assert sp.COM_Col.Process_Type == 'Collection'
+    col_scheme = sp.COM_Col.scheme()
+    col_scheme[('RWC', 'SSYW', 'SSR')] = 1
+    LCA_model_helper(sp.COM_Col('COM_test', Collection_scheme=col_scheme))
+
+
 def test_Distance():
     dist_data = sp.Distance.create_distance_table(['P1', 'P2', 'P3'], ['Heavy Duty Truck'])
     dist_data['Heavy Duty Truck']['P1']['P2'] = 20
