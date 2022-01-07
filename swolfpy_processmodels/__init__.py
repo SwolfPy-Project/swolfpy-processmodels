@@ -19,6 +19,7 @@ from .TS import TS
 from .HC import HC
 from .GC import GC
 from .RDF import RDF
+from .AnF import AnF
 
 
 __all__ = ['ProcessModel',
@@ -35,6 +36,8 @@ __all__ = ['ProcessModel',
            'TS',
            'HC',
            'GC',
-           'RDF',]
+           'RDF',
+           'AnF',
+           ]
 
 __version__ = '0.1.9'
