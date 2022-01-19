@@ -6,17 +6,10 @@ Created on Thu Jan  6 12:48:05 2022
 """
 from .ProcessModel import ProcessModel
 from swolfpy_inputdata import AnF_Input
-
 from .Common_subprocess import Flow, LCI
-
-from .Comp_subprocess import ac_comp, shredding, screen, mix, add_water, vacuum, post_screen, curing
-
-from .MRF_subprocess import Drum_Feeder, Man_Sort1, Vacuum, DS1, DS2, DS3, MS2_DS2, MS2_DS3
-from .MRF_subprocess import Baler_1Way, Baler_2Way, GBS, AK, OG, MS3_G, Glass_type, OPET, MS4_Al, MS4_Fe, MS4_HDPE, MS4_PET, MS5
-from .MRF_subprocess import HDPE_type, Magnet, ECS, Rolling_Stock, Conveyor, Mixed_paper_separation, Electricity, OHDPE
-
+from .MRF_subprocess import Drum_Feeder, Sorting, Shredder, Sterilizer, Dewater, Dryer, Pelletizer
+from .MRF_subprocess import Conveyor, Electricity
 import numpy_financial as npf
-
 import numpy as np
 
 
@@ -44,66 +37,128 @@ class AnF(ProcessModel):
         # Drum Feeder
         self._DF_feed = Drum_Feeder(self._Input, self.InputData, self.LCI)
 
-        # Manual Sort 1 (Negative)
-        self._MS1_rmnd, self._MS1_rmvd = Man_Sort1(self._DF_feed,
-                                                   self.process_data['Manual Sort 1 (Negative)'].values,
-                                                   self.InputData,
-                                                   self.LCI)
+        # Disk Screen
+        self._DS_rmnd, self._DS_rmvd = Sorting(Input=self._DF_feed,
+                                               sep_eff=self.process_data['Disk Screen'].values/100,
+                                               InputData=self.InputData,
+                                               Eqpt_data=self.InputData.Eq_DS,
+                                               LCI=self.LCI)
 
-        # Secondary Pre_screen
-        self.S2_to_shredding, self.S2_residuls = screen(input_flow=self.S1_overs,
-                                                        sep_eff=self.process_data['Pre Screen 2'].values/100,
-                                                        Op_param=self.InputData.Screen,
-                                                        lci=self.LCI,
-                                                        flow_init=self.flow_init)
+        # Manual Sorting
+        self._MS_rmnd, self._MS_rmvd = Sorting(Input=self._DS_rmnd,
+                                               sep_eff=self.process_data['Manual Sort (Negative)'].values/100,
+                                               InputData=self.InputData,
+                                               Eqpt_data=self.InputData.Eq_Neg_Sort,
+                                               LCI=self.LCI)
 
-        # Shredding/Grinding of seconday screen's unders
-        self.shred = shredding(self.S2_to_shredding,
-                               self.InputData.Shredding,
-                               self.LCI,
-                               self.flow_init)
+        self.LCI.add('Other_Residual', self._MS_rmvd + self._DS_rmvd)
 
-# =============================================================================
-#         # Mixing the shredded and screened materials
-#         self.mixed = mix(self.S1_unders,
-#                          self.shred,
-#                          self.flow_init)
-# 
-#         # Adding Water
-#         self.mixed.update(self.Assumed_Comp)
-#         if self.mixed.moist_cont > self.InputData.Deg_Param['initMC']['amount']:
-#             self.water_added = 0
-#         else:
-#             self.water_added = ((self.InputData.Deg_Param['initMC']['amount']
-#                                  * self.mixed.flow - self.mixed.water)
-#                                 / (1 - self.InputData.Deg_Param['initMC']['amount']))
-# 
-#         water_flow = (self.water_added * self.mixed.data['sol_cont'].values
-#                       / self.mixed.solid)
-# 
-#         self.substrate_to_ac = add_water(self.mixed,
-#                                          water_flow,
-#                                          self.Material_Properties,
-#                                          self.process_data,
-#                                          self.flow_init)
-# 
-#         # Active Composting
-#         self.substrate_to_ps = ac_comp(self.substrate_to_ac,
-#                                        self.CommonData,
-#                                        self.process_data,
-#                                        self.InputData,
-#                                        self.Assumed_Comp,
-#                                        self.LCI,
-#                                        self.flow_init)
-# 
-#         # Post screen
-#         self.substrate_to_vac, self.ps_res = post_screen(self.substrate_to_ps,
-#                                                          self.process_data['Post Screen'].values/100,
-#                                                          self.InputData.Screen,
-#                                                          self.LCI,
-#                                                          self.flow_init)
-# 
-# =============================================================================
+        # Shredding/Grinding
+        self._Shred = Shredder(Input=self._MS_rmnd,
+                              InputData=self.InputData,
+                              LCI=self.LCI)
+
+        # Sterlizing
+        self._Sterilized = Sterilizer(Input=self._Shred,
+                                      InputData=self.InputData,
+                                      LCI=self.LCI)
+
+        # Dewatering
+        self._Dewatered, self._waste_water = Dewater(
+            Input=self._Sterilized,
+            InputData=self.InputData,
+            MaterialProperties=self.Material_Properties,
+            LCI=self.LCI)
+
+        if self.InputData.AnF_operation['isDried']['amount']:
+            # Pelletizing
+            self._Pellet = Pelletizer(Input=self._Dewatered,
+                                  InputData=self.InputData,
+                                  LCI=self.LCI)
+
+            # Drier
+            self._Dried = Dryer(Input=self._Pellet,
+                          InputData=self.InputData,
+                          LCI=self.LCI)
+
+        # conveyor
+        self._Mass_toConveyor = (
+            self._DS_rmnd
+            + self._MS_rmnd
+            + self._Shred
+            + self._Sterilized
+            + self._Dewatered)
+
+        if self.InputData.AnF_operation['isDried']['amount']:
+            self._Mass_toConveyor += (
+                self._Pellet
+                + self._Dried)
+        Conveyor(self._Mass_toConveyor, self.InputData, self.LCI)
+
+        # Solid content of Feed
+        if self.InputData.AnF_operation['isDried']['amount']:
+            self._Feed_sol = (
+                self._Dried
+                * (1 - self.InputData.AnF_operation['Dried_moist']['amount']))
+        else:
+            self._Feed_sol = (
+                self._Dewatered
+                * (1 - self.InputData.AnF_operation['Dew_moist']['amount']))
+
+        # Calculating avoided feed production
+
+        # Mositure content of avoided maize grain is 14%
+        # Source: maize grain, feed production, RoW - Ecoinvent
+        self._avoid_feed = self._Feed_sol / 0.86
+
+        self.LCI.add(('Technosphere', 'Feed_Production'), -self._avoid_feed * 1000)  # Mg to kg
+
+        # Wastewater treatment
+        total_BOD = (
+            self._waste_water
+            * 1000  # 1000L/Mg
+            * self.InputData.Wastewater['BOD_conc']['amount']
+            / 1000) # kg/1000gr
+
+        BOD_removed = (
+            total_BOD
+            * self.CommonData.WWT['bod_rem']['amount'] / 100)
+
+        self._BOD_elec = (
+            BOD_removed
+            * self.InputData.Wastewater['BOD_elec']['amount'])
+
+        self._BOD_CO2 = (
+            BOD_removed
+            * self.InputData.Wastewater['BOD_CO2']['amount'])
+
+        self.LCI.add(('Technosphere', 'Electricity_consumption'), self._BOD_elec)
+        self.LCI.add('Bio-CO2 emissions from wastewater treatment', self._BOD_CO2)
+
+        # General Electricity
+        Electricity(self._Input, self.InputData, self.LCI)
+
+        # Capital Cost
+        Land_req = self.InputData.Electricity['Area_rate']['amount'] * self.InputData.Constr_cost['Land_req_factor']['amount']
+        Land_cost = Land_req * self.InputData.Constr_cost['Land_rate']['amount'] / 4046.86  # 1acr = 4046.86 m2
+        Constr_cost =  Land_req * (self.InputData.Constr_cost['Paving_rate']['amount'] +
+                                   self.InputData.Constr_cost['Grading_rate']['amount']) / 10000  # 1ha = 10000m2
+        Constr_cost += (self.InputData.Electricity['Area_rate']['amount'] * self.InputData.Constr_cost['Constr_rate']['amount'] / 0.0929)  # 1ft2 = 0.0929 m2
+        Constr_cost *= (1 + self.InputData.Constr_cost['Eng_rate']['amount'])
+
+        Miscellaneous_Costs = (self.InputData.Constr_cost['Landscaping_rate']['amount'] / 10000 * Land_req) # 1 ha = 10000m2
+
+        # Assumes fenc along three sides of square
+        Miscellaneous_Costs += np.sqrt(Land_req * 156) * 3 * self.InputData.Constr_cost['Fencing_Rate']['amount'] / 156
+
+        # Total capital cost
+        Unit_capital_cost = Land_cost + Constr_cost +  Miscellaneous_Costs  # $/tpd
+        Unit_capital_cost /= self.InputData.Labor['Day_year']['amount']  # $/t.yr
+        capital_cost = -npf.pmt(rate=self.InputData.Constr_cost['Inerest_rate']['amount'],
+                        nper=self.InputData.Constr_cost['lifetime']['amount'],
+                        pv=Unit_capital_cost)
+        self.LCI.add(('biosphere3', 'Capital_Cost'), capital_cost * self._Input)
+
     def setup_MC(self, seed=None):
         self.InputData.setup_MC(seed)
 
@@ -115,4 +170,31 @@ class AnF(ProcessModel):
     def report(self):
         report = {}
         report["process name"] = (self.process_name, self.Process_Type, self.__class__)
+        report["Waste"] = {}
+        report["Technosphere"] = {}
+        report["Biosphere"] = {}
+
+        for x in ["Waste", "Technosphere", "Biosphere"]:
+            for y in self.Index:
+                report[x][y] = {}
+
+        lci_report = self.LCI.report(input_mass=self._Input)
+
+        for y in self.Index:
+            # Output Technospphere Database
+            report["Technosphere"][y][('Technosphere', 'Electricity_consumption')] = lci_report[('Technosphere', 'Electricity_consumption')][y]
+            report["Technosphere"][y][('Technosphere', 'Equipment_Diesel')] = lci_report[('Technosphere', 'Equipment_Diesel')][y]
+            report["Technosphere"][y][('Technosphere', 'Equipment_LPG')] = lci_report[('Technosphere', 'Equipment_LPG')][y]
+            report["Technosphere"][y][('Technosphere', 'Feed_Production')] = lci_report[('Technosphere', 'Feed_Production')][y]
+
+            # Cost
+            report["Biosphere"][y][('biosphere3','Operational_Cost')] = lci_report[('biosphere3','Operational_Cost')][y]
+            report["Biosphere"][y][('biosphere3', 'Capital_Cost')] = lci_report[('biosphere3', 'Capital_Cost')][y]
+
+            # Emissions
+            report["Biosphere"][y][('biosphere3', 'eba59fd6-f37e-41dc-9ca3-c7ea22d602c7')] = (  # Carbon dioxide, non-fossil ('air',)
+                lci_report['Bio-CO2 emissions from wastewater treatment'][y])
+
+            # Waste products
+            report["Waste"][y]['Other_Residual'] = lci_report['Other_Residual'][y]
         return report

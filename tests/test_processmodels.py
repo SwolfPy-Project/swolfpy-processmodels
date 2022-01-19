@@ -101,6 +101,11 @@ def test_HC():
     LCA_model_helper(sp.HC())
 
 
+def test_AnF():
+    assert sp.AnF.Process_Type == 'Treatment'
+    LCA_model_helper(sp.AnF())
+
+
 def test_Reproc():
     assert sp.Reproc.Process_Type == 'Reprocessing'
     LCA_model_helper(sp.Reproc())
