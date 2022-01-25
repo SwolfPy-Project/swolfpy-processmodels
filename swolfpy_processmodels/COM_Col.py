@@ -43,7 +43,7 @@ class COM_Col(ProcessModel):
         Retrun the dictionary for collection_scheme. all the
         contributions are zero; user should define them according to his/her case.
         """
-        SepOrg = ['N/A', 'SSYW', 'SSO']
+        SepOrg = ['N/A', 'SSYW', 'SSO', 'SSO_AnF']
         SepRec = ['N/A', 'SSR', 'DSR', 'MSR', 'MSRDO']
         scheme = {}
         for i in SepOrg:
@@ -73,11 +73,11 @@ class COM_Col(ProcessModel):
 
     def calc_composition(self):
         # Creating the sel.col Data frame
-        col_data = np.zeros((11, 62), dtype=float)
+        col_data = np.zeros((12, 62), dtype=float)
         col_data[:] = np.nan
         col_columns = []
         col_index = ['RWC', 'SSR', 'DSR', 'MSR',
-                     'SSYW', 'SSO', 'ORG', 'DryRes', 'REC',
+                     'SSYW', 'SSO', 'SSO_AnF', 'ORG', 'DryRes', 'REC',
                      'WetRes', 'MSRDO']
         col_i = 0
 
@@ -156,7 +156,7 @@ class COM_Col(ProcessModel):
         self.col = pd.DataFrame(data=col_data,
                                 columns=col_columns,
                                 index=['RWC', 'SSR', 'DSR', 'MSR',
-                                       'SSYW', 'SSO', 'ORG', 'DryRes', 'REC',
+                                       'SSYW', 'SSO', 'SSO_AnF', 'ORG', 'DryRes', 'REC',
                                         'WetRes', 'MSRDO'],
                                 dtype=float)
 
@@ -164,11 +164,11 @@ class COM_Col(ProcessModel):
 
         self._col_schm = {
             'RWC': {'Contribution': 0,
-                    'separate_col':{'SSR': 0, 'DSR': 0, 'MSR': 0, 'MSRDO': 0, 'SSYW': 0, 'SSO': 0}},
+                    'separate_col':{'SSR': 0, 'DSR': 0, 'MSR': 0, 'MSRDO': 0, 'SSYW': 0, 'SSO': 0, 'SSO_AnF': 0}},
             'ORG_DryRes': {'Contribution': 0,
-                           'separate_col': {'SSR': 0, 'DSR': 0, 'MSR': 0, 'MSRDO': 0, 'SSYW': 0, 'SSO': 0}},
+                           'separate_col': {'SSR': 0, 'DSR': 0, 'MSR': 0, 'MSRDO': 0, 'SSYW': 0, 'SSO': 0, 'SSO_AnF': 0}},
             'REC_WetRes': {'Contribution': 0,
-                           'separate_col': {'SSR': 0, 'DSR': 0, 'MSR': 0, 'MSRDO': 0, 'SSYW': 0, 'SSO': 0}}}
+                           'separate_col': {'SSR': 0, 'DSR': 0, 'MSR': 0, 'MSRDO': 0, 'SSYW': 0, 'SSO': 0, 'SSO_AnF': 0}}}
 
         for k, v in self.col_schm.items():
             if k[0] == 'RWC':
@@ -203,7 +203,7 @@ class COM_Col(ProcessModel):
             'REC': self._col_schm['REC_WetRes']['Contribution'],
             'WetRes': self._col_schm['REC_WetRes']['Contribution']}
 
-        for i in ['SSR', 'DSR', 'MSR', 'MSRDO', 'SSYW', 'SSO']:
+        for i in ['SSR', 'DSR', 'MSR', 'MSRDO', 'SSYW', 'SSO', 'SSO_AnF']:
             self.col_proc[i] = 0
             for j in ['RWC', 'ORG_DryRes', 'REC_WetRes']:
                 self.col_proc[i] += (
@@ -216,7 +216,7 @@ class COM_Col(ProcessModel):
             self.P_use[j] = 1 if self.col_proc[j] > 0 else 0
 
         # Mass separated by collection process (kg/week.Household)
-        columns = ['RWC', 'SSR', 'DSR', 'MSR', 'SSYW', 'SSO',
+        columns = ['RWC', 'SSR', 'DSR', 'MSR', 'SSYW', 'SSO', 'SSO_AnF',
                    'ORG', 'DryRes', 'REC', 'WetRes',
                    'MSRDO']
         self.mass = pd.DataFrame(index=self.Index,
@@ -224,7 +224,7 @@ class COM_Col(ProcessModel):
                                  data=0.0,
                                  dtype=float)
 
-        for i in ['SSR', 'DSR', 'MSR', 'SSYW', 'SSO', 'ORG', 'REC', 'MSRDO']:
+        for i in ['SSR', 'DSR', 'MSR', 'SSYW', 'SSO', 'SSO_AnF', 'ORG', 'REC', 'MSRDO']:
             self.mass[i] = (
                 gen_per_week.values
                 * self.process_data[i].values
@@ -234,7 +234,7 @@ class COM_Col(ProcessModel):
 
         def separate_col_mass(j):
             mass = np.zeros(len(self.CommonData.Index))
-            for i in ['SSR', 'DSR', 'MSR', 'SSYW', 'SSO', 'MSRDO']:
+            for i in ['SSR', 'DSR', 'MSR', 'SSYW', 'SSO', 'SSO_AnF', 'MSRDO']:
                 mass += self.mass[i].values * self._col_schm[j]['separate_col'][i]
             return mass
 
@@ -282,7 +282,7 @@ class COM_Col(ProcessModel):
                        * 1.30795)  # m3 --> Cubic yard
         mass_to_cyd[self.process_data['Bulk_Density'].values <= 0] = 0.0
 
-        for i in ['RWC', 'SSR', 'DSR', 'MSR', 'SSYW', 'SSO', 'MSRDO']:
+        for i in ['RWC', 'SSR', 'DSR', 'MSR', 'SSYW', 'SSO', 'SSO_AnF', 'MSRDO']:
             vol = (self.mass[i].values * mass_to_cyd).sum()  # Unit kg/cyd
             if vol > 0:
                 self.col.loc[i, 'den_c'] = (self.mass[i].values
@@ -314,7 +314,7 @@ class COM_Col(ProcessModel):
             self.result_destination = {}
 
             Collection_Index = ['RWC', 'SSR', 'DSR', 'MSR', 'SSYW',
-                                'SSO', 'ORG', 'DryRes', 'REC', 'WetRes',
+                                'SSO', 'SSO_AnF', 'ORG', 'DryRes', 'REC', 'WetRes',
                                 'MSRDO']
             for i in Collection_Index:
                 self.dest[i] = self.find_destination(i, self.Treat_proc)
@@ -325,7 +325,7 @@ class COM_Col(ProcessModel):
 
             for i in range(n_run):
                 for j in ['RWC', 'SSR', 'DSR', 'MSR', 'MSRDO', 'SSYW',
-                          'SSO', 'MSRDO', 'ORG', 'REC']:
+                          'SSO', 'SSO_AnF', 'MSRDO', 'ORG', 'REC']:
                     if len(self.dest[j]) > i:
                         # Distance btwn collection route and destination
                         self.col['Drf'][j] = self.dest[j][list(self.dest[j].keys())[i]]
@@ -377,7 +377,7 @@ class COM_Col(ProcessModel):
         self.col['Tfg'] = self.col['Dfg'].values / self.col['Vfg'].values * 60
 
         for i in ['RWC', 'SSR', 'DSR', 'MSR',
-                  'SSYW', 'SSO', 'MSRDO']:
+                  'SSYW', 'SSO', 'SSO_AnF', 'MSRDO']:
             self.col.loc[i, 'mass'] = self.mass[i].values.sum()
 
         # Mass of ORG_DryRes and REC_WetRec

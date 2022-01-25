@@ -249,7 +249,9 @@ class SF_Col(ProcessModel):
             self.P_use[j] = 1 if self.col_proc[j] > 0 else 0
 
         # Mass separated by collection process (kg/week.Household)
-        columns = self.CommonData.Collection_Index
+        columns = ['RWC', 'SSR', 'DSR', 'MSR', 'LV', 'SSYW', 'SSO',
+                   'SSO_HC', 'ORG', 'DryRes', 'REC', 'WetRes',
+                   'MRDO', 'SSYWDO', 'MSRDO']
         self.mass = pd.DataFrame(index=self.Index,
                                  columns=columns,
                                  data=0.0,
@@ -369,7 +371,9 @@ class SF_Col(ProcessModel):
         if self.Treat_proc:
             self.dest = {}
             self.result_destination = {}
-            for i in self.CommonData.Collection_Index:
+            for i in ['RWC', 'SSR', 'DSR', 'MSR', 'LV', 'SSYW', 'SSO',
+                      'SSO_HC', 'ORG', 'DryRes', 'REC', 'WetRes',
+                      'MRDO', 'SSYWDO', 'MSRDO']:
                 self.dest[i] = self.find_destination(i, self.Treat_proc)
                 self.result_destination[i] = {}
 
