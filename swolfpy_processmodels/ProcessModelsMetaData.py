@@ -84,3 +84,9 @@ ProcessModelsMetaData['RDF']['Name'] = 'Refuse-Derived Fuel'
 ProcessModelsMetaData['RDF']['File'] = 'RDF.py'
 ProcessModelsMetaData['RDF']['InputType'] = ['RWC', 'MRDO']
 
+ProcessModelsMetaData['AnF'] = {}
+ProcessModelsMetaData['AnF']['Process_Type'] = 'Treatment'
+ProcessModelsMetaData['AnF']['Name'] = 'Animal Feed'
+ProcessModelsMetaData['AnF']['File'] = 'AnF.py'
+ProcessModelsMetaData['AnF']['InputType'] = ['SSO_AnF']
+
