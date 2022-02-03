@@ -3,14 +3,14 @@
 @author: msardar2
 """
 import pandas as pd
-from swolfpy_inputdata import SF_Col_Input
+from swolfpy_inputdata import MF_Col_Input
 from .ProcessModel import ProcessModel
 import numpy_financial as npf
 import numpy as np
 import warnings
 
 
-class SF_Col(ProcessModel):
+class MF_Col(ProcessModel):
     Process_Type = 'Collection'
     def __init__(self, process_name, Collection_scheme,
                  Treatment_processes=None,
@@ -19,7 +19,7 @@ class SF_Col(ProcessModel):
                  input_data_path=None):
         super().__init__(process_name, CommonDataObjct)
 
-        self.InputData = SF_Col_Input(input_data_path,
+        self.InputData = MF_Col_Input(input_data_path,
                                       process_name=self.process_name,
                                       CommonDataObjct=CommonDataObjct)
 
@@ -43,7 +43,7 @@ class SF_Col(ProcessModel):
         Retrun the dictionary for collection_scheme. all the
         contributions are zero; user should define them according to his/her case.
         """
-        SepOrg = ['N/A', 'SSYW', 'SSO', 'SSYWDO']
+        SepOrg = ['N/A', 'SSYW', 'SSO']
         SepRec = ['N/A', 'SSR', 'DSR', 'MSR', 'MSRDO']
         scheme = {}
         for i in SepOrg:
@@ -53,9 +53,6 @@ class SF_Col(ProcessModel):
             scheme[('REC_WetRes', i, 'REC_WetRes')] = 0
         for j in SepRec:
             scheme[('ORG_DryRes', 'ORG_DryRes', j)] = 0
-        for i in ['N/A', 'SSYWDO']:
-            for j in ['N/A', 'MSRDO']:
-                scheme[('MRDO', i, j)] = 0
         return scheme
 
     def _normalize_scheme(self, DropOff=True, warn=True):
@@ -76,17 +73,22 @@ class SF_Col(ProcessModel):
 
     def calc_composition(self):
         # Creating the sel.col Data frame
-        col_data = np.zeros((14, 61), dtype=float)
+        col_data = np.zeros((11, 62), dtype=float)
         col_data[:] = np.nan
         col_columns = []
-        col_index = ['RWC', 'SSR', 'DSR', 'MSR', 'LV',
-                                       'SSYW', 'SSO', 'ORG', 'DryRes', 'REC',
-                                        'WetRes', 'MRDO', 'SSYWDO', 'MSRDO']
+        col_index = ['RWC', 'SSR', 'DSR', 'MSR',
+                     'SSYW', 'SSO', 'ORG', 'DryRes', 'REC',
+                     'WetRes', 'MSRDO']
         col_i = 0
 
         for key, val in self.InputData.den_asmd.items():
             col_data[col_index.index(key), col_i] = val['amount']
         col_columns.append('den_asmd')
+        col_i += 1
+
+        for key, val in self.InputData.HS.items():
+            col_data[col_index.index(key), col_i] = val['amount']
+        col_columns.append('HS')
         col_i += 1
 
         for key, val in self.InputData.Prtcp.items():
@@ -153,22 +155,20 @@ class SF_Col(ProcessModel):
 
         self.col = pd.DataFrame(data=col_data,
                                 columns=col_columns,
-                                index=['RWC', 'SSR', 'DSR', 'MSR', 'LV',
+                                index=['RWC', 'SSR', 'DSR', 'MSR',
                                        'SSYW', 'SSO', 'ORG', 'DryRes', 'REC',
-                                        'WetRes', 'MRDO', 'SSYWDO', 'MSRDO'],
+                                        'WetRes', 'MSRDO'],
                                 dtype=float)
 
         self.col['Fract_Dies'] = 1 - self.InputData.Col['Fract_CNG']['amount']
 
         self._col_schm = {
             'RWC': {'Contribution': 0,
-                    'separate_col':{'SSR': 0, 'DSR': 0, 'MSR': 0, 'MSRDO': 0, 'SSYW': 0, 'SSO': 0, 'SSYWDO': 0}},
+                    'separate_col':{'SSR': 0, 'DSR': 0, 'MSR': 0, 'MSRDO': 0, 'SSYW': 0, 'SSO': 0}},
             'ORG_DryRes': {'Contribution': 0,
-                           'separate_col': {'SSR': 0, 'DSR': 0, 'MSR': 0, 'MSRDO': 0, 'SSYW': 0, 'SSO': 0, 'SSYWDO': 0}},
+                           'separate_col': {'SSR': 0, 'DSR': 0, 'MSR': 0, 'MSRDO': 0, 'SSYW': 0, 'SSO': 0}},
             'REC_WetRes': {'Contribution': 0,
-                           'separate_col': {'SSR': 0, 'DSR': 0, 'MSR': 0, 'MSRDO': 0, 'SSYW': 0, 'SSO': 0, 'SSYWDO': 0}},
-            'MRDO': {'Contribution': 0,
-                     'separate_col': {'SSR': 0, 'DSR': 0, 'MSR': 0, 'MSRDO': 0, 'SSYW': 0, 'SSO': 0, 'SSYWDO': 0}}}
+                           'separate_col': {'SSR': 0, 'DSR': 0, 'MSR': 0, 'MSRDO': 0, 'SSYW': 0, 'SSO': 0}}}
 
         for k, v in self.col_schm.items():
             if k[0] == 'RWC':
@@ -177,8 +177,6 @@ class SF_Col(ProcessModel):
                 self._col_schm['ORG_DryRes']['Contribution'] += v
             elif k[0] == 'REC_WetRes':
                 self._col_schm['REC_WetRes']['Contribution'] += v
-            elif k[0] == 'MRDO':
-                self._col_schm['MRDO']['Contribution'] += v
             else:
                 raise Exception(f'Error in collection scheme keys: "{k[0]}" is not defined!')
 
@@ -197,48 +195,17 @@ class SF_Col(ProcessModel):
             * self.InputData.Col['houses_res']['amount']
             * 365 / 7 / 1000)  # 52 weeks per year & 1000 kg = 1 Mg
 
-        # Check for Leave Vaccum
-        self.process_data['LV'] = 0
-        if self.InputData.Col['Leaf_vacuum']['amount'] == 1:
-            LV_gen = (gen_per_week['Yard_Trimmings_Leaves']
-                      * self.InputData.Col['houses_res']['amount']
-                      * 365 / 7 / 1000)
-            LV_col = self.InputData.Col['Leaf_vacuum_amount']['amount']
-
-            if LV_gen <= LV_col:
-                self.process_data.loc['Yard_Trimmings_Leaves', 'LV'] = 1
-            else:
-                self.process_data.loc['Yard_Trimmings_Leaves', 'LV'] = LV_col / LV_gen
-
-            for j in ['RWC', 'ORG_DryRes', 'REC_WetRes', 'MRDO']:
-                self._col_schm[j]['separate_col']['LV'] = 1
-        else:
-            for j in ['RWC', 'ORG_DryRes', 'REC_WetRes', 'MRDO']:
-                self._col_schm[j]['separate_col']['LV'] = 0
-
-        self.col.loc['LV', 'Fr'] = (
-            self.InputData.Col['LV_serv_times']['amount']
-            / self.InputData.Col['LV_serv_pd']['amount'])
-
         # Total fraction where this service is offered
         self.col_proc = {
             'RWC': self._col_schm['RWC']['Contribution'],
             'ORG': self._col_schm['ORG_DryRes']['Contribution'],
             'DryRes': self._col_schm['ORG_DryRes']['Contribution'],
             'REC': self._col_schm['REC_WetRes']['Contribution'],
-            'WetRes': self._col_schm['REC_WetRes']['Contribution'],
-            'MRDO': self._col_schm['MRDO']['Contribution']}
+            'WetRes': self._col_schm['REC_WetRes']['Contribution']}
 
-        # SSO_HC contribution
-        for j in ['RWC', 'ORG_DryRes', 'REC_WetRes', 'MRDO']:
-            if self.InputData.Col['HC_partic']['amount'] > 0:
-                self._col_schm[j]['separate_col']['SSO_HC'] = 1
-            else:
-                self._col_schm[j]['separate_col']['SSO_HC'] = 0
-
-        for i in ['LV', 'SSR', 'DSR', 'MSR', 'MSRDO', 'SSYW', 'SSO', 'SSO_HC', 'SSYWDO']:
+        for i in ['SSR', 'DSR', 'MSR', 'MSRDO', 'SSYW', 'SSO']:
             self.col_proc[i] = 0
-            for j in ['RWC', 'ORG_DryRes', 'REC_WetRes', 'MRDO']:
+            for j in ['RWC', 'ORG_DryRes', 'REC_WetRes']:
                 self.col_proc[i] += (
                     self._col_schm[j]['Contribution']
                     * self._col_schm[j]['separate_col'][i])
@@ -249,59 +216,32 @@ class SF_Col(ProcessModel):
             self.P_use[j] = 1 if self.col_proc[j] > 0 else 0
 
         # Mass separated by collection process (kg/week.Household)
-        columns = ['RWC', 'SSR', 'DSR', 'MSR', 'LV', 'SSYW', 'SSO',
-                   'SSO_HC', 'ORG', 'DryRes', 'REC', 'WetRes',
-                   'MRDO', 'SSYWDO', 'MSRDO']
+        columns = ['RWC', 'SSR', 'DSR', 'MSR', 'SSYW', 'SSO',
+                   'ORG', 'DryRes', 'REC', 'WetRes',
+                   'MSRDO']
         self.mass = pd.DataFrame(index=self.Index,
                                  columns=columns,
                                  data=0.0,
                                  dtype=float)
 
-        for i in ['SSR', 'DSR', 'MSR', 'SSYW', 'SSO', 'ORG', 'REC', 'SSYWDO', 'MSRDO']:
+        for i in ['SSR', 'DSR', 'MSR', 'SSYW', 'SSO', 'ORG', 'REC', 'MSRDO']:
             self.mass[i] = (
                 gen_per_week.values
                 * self.process_data[i].values
                 * self.P_use[i])
 
-            self.mass.loc['Yard_Trimmings_Leaves', i] *= (1 - self.process_data.loc['Yard_Trimmings_Leaves', 'LV'])
-
-        self.mass['LV'] = (gen_per_week.values
-                           * self.process_data['LV'].values
-                           * self.P_use['LV'])
-
-        # SSO_HC mass
-        """
-        For home composting, it is assumed that only yard waste and
-        food waste (vegetables) are used.
-        """
-        if self.InputData.Col['HC_partic']['amount'] > 0:
-            HC_frac = self.InputData.Col['HC_partic']['amount'] / 100
-            c = ['SSR', 'DSR', 'MSR', 'SSYW', 'SSO', 'ORG', 'REC', 'SSYWDO', 'MSRDO']
-            OFMSW = ['Yard_Trimmings_Leaves',
-                     'Yard_Trimmings_Grass',
-                     'Yard_Trimmings_Branches',
-                     'Food_Waste_Vegetable']
-
-            self.mass.loc[OFMSW, 'SSO_HC'] = (
-                gen_per_week[OFMSW] * HC_frac)
-
-            self.mass.loc['Yard_Trimmings_Leaves', 'SSO_HC'] *= (
-                    1 - self.process_data.loc['Yard_Trimmings_Leaves', 'LV'])
-
-            self.mass.loc[OFMSW, c] *= (1 - HC_frac)
 
         def separate_col_mass(j):
             mass = np.zeros(len(self.CommonData.Index))
-            for i in ['SSR', 'DSR', 'MSR', 'LV', 'SSYW', 'SSO', 'SSO_HC', 'SSYWDO', 'MSRDO']:
+            for i in ['SSR', 'DSR', 'MSR', 'SSYW', 'SSO', 'MSRDO']:
                 mass += self.mass[i].values * self._col_schm[j]['separate_col'][i]
             return mass
 
         # Calculating the residual waste after separate collection
-        for j in ['RWC', 'MRDO']:
-            self.mass[j]= (
-                gen_per_week.values
-                * self.process_data[j].values
-                - separate_col_mass(j)) * self.P_use[j]
+        self.mass['RWC']= (
+            gen_per_week.values
+            * self.process_data['RWC'].values
+            - separate_col_mass('RWC')) * self.P_use['RWC']
 
         # ORG_DryRes
         self.mass['DryRes']= (
@@ -341,7 +281,7 @@ class SF_Col(ProcessModel):
                        * 1.30795)  # m3 --> Cubic yard
         mass_to_cyd[self.process_data['Bulk_Density'].values <= 0] = 0.0
 
-        for i in ['RWC', 'SSR', 'DSR', 'MSR', 'LV', 'SSYW', 'SSO', 'MRDO', 'SSYWDO', 'MSRDO']:
+        for i in ['RWC', 'SSR', 'DSR', 'MSR', 'SSYW', 'SSO', 'MSRDO']:
             vol = (self.mass[i].values * mass_to_cyd).sum()  # Unit kg/cyd
             if vol > 0:
                 self.col.loc[i, 'den_c'] = (self.mass[i].values
@@ -371,9 +311,11 @@ class SF_Col(ProcessModel):
         if self.Treat_proc:
             self.dest = {}
             self.result_destination = {}
-            for i in ['RWC', 'SSR', 'DSR', 'MSR', 'LV', 'SSYW', 'SSO',
-                      'SSO_HC', 'ORG', 'DryRes', 'REC', 'WetRes',
-                      'MRDO', 'SSYWDO', 'MSRDO']:
+
+            Collection_Index = ['RWC', 'SSR', 'DSR', 'MSR', 'SSYW',
+                                'SSO', 'ORG', 'DryRes', 'REC', 'WetRes',
+                                'MSRDO']
+            for i in Collection_Index:
                 self.dest[i] = self.find_destination(i, self.Treat_proc)
                 self.result_destination[i] = {}
 
@@ -381,8 +323,8 @@ class SF_Col(ProcessModel):
             n_run = max([len(self.dest[i]) for i in self.dest.keys()])
 
             for i in range(n_run):
-                for j in ['RWC', 'SSR', 'DSR', 'MSR', 'MSRDO', 'LV', 'SSYW',
-                          'SSO', 'SSYWDO', 'MRDO', 'SSYWDO', 'MSRDO', 'ORG', 'REC']:
+                for j in ['RWC', 'SSR', 'DSR', 'MSR', 'MSRDO', 'SSYW',
+                          'SSO', 'MSRDO', 'ORG', 'REC']:
                     if len(self.dest[j]) > i:
                         # Distance btwn collection route and destination
                         self.col['Drf'][j] = self.dest[j][list(self.dest[j].keys())[i]]
@@ -421,9 +363,6 @@ class SF_Col(ProcessModel):
         d_msw[d_msw <= 0] = self.col['den_c'].values[d_msw <= 0]
         self.col['d_msw'] = d_msw
 
-        # Distance between service stops, adjusted (miles)
-        self.col['Dbtw'] = self.col['D100'].values / self.col['Prtcp'].values
-
         # Travel time between service stops, adjusted based on participation (min/stop)
         self.col['Tbtw'] = self.col['Dbtw'].values / self.col['Vbet'].values * 60
 
@@ -436,18 +375,13 @@ class SF_Col(ProcessModel):
         # Time from disposal fac. to garage (min/day-vehicle)
         self.col['Tfg'] = self.col['Dfg'].values / self.col['Vfg'].values * 60
 
-        for i in ['RWC', 'SSR', 'DSR', 'MSR', 'LV',
-                  'SSYW', 'SSO', 'MRDO', 'SSYWDO', 'MSRDO']:
+        for i in ['RWC', 'SSR', 'DSR', 'MSR',
+                  'SSYW', 'SSO', 'MSRDO']:
             self.col.loc[i, 'mass'] = self.mass[i].values.sum()
 
         # Mass of ORG_DryRes and REC_WetRec
         for i, j in [('ORG', 'DryRes'), ('REC', 'WetRes')]:
             self.col.loc[i, 'mass'] = (self.mass[i].values + self.mass[j].values).sum()
-
-        # Revising mass of LV collection - as it happens only in LV_serv_pd
-        self.col.loc['LV', 'mass'] = (
-            self.col.loc['LV', 'mass'] * 365 / 7
-            / self.InputData.Col['LV_serv_pd']['amount'])
 
         # Calculations for collection vehicle activities
         # Houses per trip (Volume limited) and (mass limited)
@@ -482,8 +416,8 @@ class SF_Col(ProcessModel):
         # Time per trip (min/trip)
         # Collection
         self.col['Tc'] = (
-            self.col['Tbtw'].values * (self.col['Ht'].values /self.InputData.Col['HS']['amount'] - 1)  # collection travel
-            + self.col['TL'].values * self.col['Ht'].values / self.InputData.Col['HS']['amount']  # collection loading
+            self.col['Tbtw'].values * (self.col['Ht'].values / self.col['HS'].values - 1)  # collection travel
+            + self.col['TL'].values * self.col['Ht'].values / self.col['HS'].values  # collection loading
             + 2 * self.col['Trf'].values  # travel
             + self.col['S'].values)  # unload time
 
@@ -508,10 +442,10 @@ class SF_Col(ProcessModel):
         self.col['SD'] = (
             self.col['Ht'].values
             * self.col['RD'].values
-            / self.InputData.Col['HS']['amount'])
+            / self.col['HS'].values)
 
         # Calculations for collection vehicle activities (Drop off)
-        for i in ['MRDO', 'SSYWDO', 'MSRDO']:
+        for i in ['MSRDO']:
             # volume of recyclables deposited at drop-off site per week (cy/week-house)
             self.col.loc[i, 'Ht'] = (
                 self.mass[i].values.sum()
@@ -568,7 +502,7 @@ class SF_Col(ProcessModel):
         # unloading time at disposal facility (min/day-vehicle)
         self.col['UD'] = (self.col['RD'].values + 0.5) * self.col['S'].values
 
-        for i in ['MRDO', 'SSYWDO', 'MSRDO']:
+        for i in ['MSRDO']:
             self.col.loc[i, 'Tb'] = 0
 
             # travel time between disposal facility and drop-off site (min/day-vehicle)
@@ -625,7 +559,7 @@ class SF_Col(ProcessModel):
         index_dict = dict(zip(self.col.index,
                               np.arange(len(self.col.index))))
         fltr_DO = [False for i in self.col.index]
-        for i in ['MRDO', 'SSYWDO', 'MSRDO']:
+        for i in ['MSRDO']:
             fltr_DO[index_dict[i]] = True
         diesel_col[fltr_DO] = 0
 
@@ -662,7 +596,6 @@ class SF_Col(ProcessModel):
             self.col['Fract_Dies'].values[fltr_4]
             * self.col['Dfg'].values[fltr_4]
             / self.col['MPG_all'].values[fltr_4])
-
         FuelD = pd.Series(
             (diesel_gr + diesel_idl + diesel_col
              + diesel_rf + diesel_ud + diesel_fg),
@@ -800,7 +733,7 @@ class SF_Col(ProcessModel):
             / self.col['dropoff_MPG'].values[fltr_DO] )
         self.col['FuelT'] = FuelT
 
-        for i in ['MRDO', 'SSYWDO', 'MSRDO']:
+        for i in ['MSRDO']:
             # weight of refuse delivered per trip (kg/trip)
             self.col.loc[i, 'RefT'] = (
                 self.mass[i].values.sum()
@@ -864,7 +797,7 @@ class SF_Col(ProcessModel):
         # no. of bins per vehicle (bins/vehicle)
         self.col['Nb'] = (
             self.col['Rb'].values
-            * (self.col['Ht'].values / self.col['Prtcp'].values)
+            * (self.col['Ht'].values / self.col['HS'].values)
             * self.col['RD'].values
             * self.col['CD'].values
             / self.col['Fr'].values)
@@ -923,7 +856,7 @@ class SF_Col(ProcessModel):
         C_house[np.isnan(C_house)] = 0.0
         self.col['C_house'] = C_house
 
-        # Cost per ton of refuse collected - Cap+OM+bins ($/Mg)
+        # ☻ ton of refuse collected - Cap+OM+bins ($/Mg)
         self.col['C_collection'] = (
             (self.col['C_house'] * 7 / 365)
             / (self.mass.sum() / 1000)).replace([np.inf, np.nan], 0)
@@ -943,7 +876,6 @@ class SF_Col(ProcessModel):
         self.output = self.col[['TotalMass', 'FuelMg', 'FuelMg_CNG',
                                 'ElecMg', 'FuelMg_dov', 'C_collection']]
         self.output = self.output.fillna(0.0)
-        self.output.loc['SSO_HC', :] = 0.0
 
     def calc(self):
         self.calc_composition()

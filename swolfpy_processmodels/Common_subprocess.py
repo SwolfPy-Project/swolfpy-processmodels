@@ -61,9 +61,11 @@ class LCI():
         """
         LCI = deepcopy(self.lci)
         if input_mass is not None:
+            non_zero_fltr = input_mass > 0
+            zero_fltr = input_mass == 0
             for j in range(self.col_index):
-                LCI[:, j] /= input_mass
-
+                LCI[non_zero_fltr, j] /= input_mass[non_zero_fltr]
+                LCI[zero_fltr, j] = 0.0
         if transpose:
             report = pd.DataFrame(LCI[:, :self.col_index].transpose(),
                                   columns=self.index,

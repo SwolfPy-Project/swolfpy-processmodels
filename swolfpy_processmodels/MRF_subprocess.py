@@ -31,15 +31,21 @@ def calc_resource(total_throughput, remaining, removed, Eqpt, InputData, LCI):
     Cap = Eqpt['Investment_cost']['amount'] + Eqpt['Installation_cost']['amount']
     Rate = InputData.Constr_cost['Inerest_rate']['amount']
     Lftime = Eqpt['LifeTime']['amount']
-    TotalHour = InputData.Labor['Hr_shift']['amount'] * InputData.Labor['Shift_day']['amount'] * InputData.Labor['Day_year']['amount']
-    # Average Cost of Ownership ($/Mg)
-    AveCostOwner = (npf.pmt(Rate, Lftime, -Cap) + Eqpt['O&M']['amount']) / (TotalHour * Eqpt['Max_input']['amount'] * Eqpt['frac_MaxInput']['amount'])
+    TotalHour = (
+        InputData.Labor['Hr_shift']['amount']
+        * InputData.Labor['Shift_day']['amount']
+        * InputData.Labor['Day_year']['amount'])
 
-    #Laborers Required (Sorter*hours/Mg)
+    # Average Cost of Ownership ($/Mg)
+    AveCostOwner = (
+        (npf.pmt(Rate, Lftime, -Cap) + Eqpt['O&M']['amount'])
+        / (TotalHour * Eqpt['Max_input']['amount'] * Eqpt['frac_MaxInput']['amount']))
+
+    # Laborers Required (Sorter*hours/Mg)
     LaborReq = Eqpt['N_Labor']['amount'] / (Eqpt['Max_input']['amount'] * Eqpt['frac_MaxInput']['amount'])
-    #Drivers Required (Driver*hours/Mg)
+    # Drivers Required (Driver*hours/Mg)
     DriverReq = Eqpt['N_Driver']['amount'] / (Eqpt['Max_input']['amount'] * Eqpt['frac_MaxInput']['amount'])
-    #Labor (sorter+Driver) Cost ($/Mg input)
+    # Labor (sorter+Driver) Cost ($/Mg input)
     LaborCost = (LaborReq * InputData.Labor['Labor_rate']['amount'] + DriverReq * InputData.Labor['Driver_rate']['amount']) *\
                 (1 + InputData.Labor['Fringe_rate']['amount']) * (1 + InputData.Labor['Management_rate']['amount'])
 
@@ -100,7 +106,7 @@ def Neg_Sort(Input, sep_eff, InputData, LCI):
     # Equipment input
     Eqpt = InputData.Eq_Neg_Sort
 
-    #Resource use calculation
+    # Resource use calculation
     calc_resource(Input, remained, removed, Eqpt, InputData, LCI)
 
     return remained, removed
@@ -799,3 +805,50 @@ def Electricity(Input, InputData, LCI):
     elec_office = Input * InputData.Electricity['Area_rate']['amount'] * InputData.Electricity['Frac_office']['amount'] * InputData.Electricity['Elec_office']['amount']
     elec_floor = Input * InputData.Electricity['Area_rate']['amount'] * (1-InputData.Electricity['Frac_office']['amount']) * InputData.Electricity['Elec_floor']['amount']
     LCI.add(('Technosphere', 'Electricity_consumption'), elec_office+elec_floor)
+
+### sterilizing the waste
+def Sterilizer(Input, InputData, LCI):
+    # Mass Calculation
+    feed = Input
+
+    # Equipment input
+    Eqpt = InputData.Eq_Sterilizer
+
+    # Resource use calculation
+    # For Sterilizer removed, remaining and throughput are same.
+    calc_resource(Input, Input, Input, Eqpt, InputData, LCI)
+
+    return feed
+
+### Dewater
+def Dewater(Input, InputData, MaterialProperties, LCI):
+    # Equipment input
+    Eqpt = InputData.Eq_Dewater
+    
+    # Mass Calculation
+    feed_moist = Input * MaterialProperties['Moisture Content'].values / 100
+    feed_solid = Input - feed_moist
+    product = feed_solid / (1 - InputData.AnF_operation['Dew_moist']['amount'])
+    waste_water = Input - product
+
+    # Resource use calculation
+    calc_resource(Input, product, waste_water, Eqpt, InputData, LCI)
+
+    return product, waste_water
+
+
+### Dryer
+def Dryer(Input, InputData, LCI):
+    # Equipment input
+    Eqpt = InputData.Eq_Dryer
+
+    # Mass Calculation
+    feed_moist = Input * InputData.AnF_operation['Dew_moist']['amount']
+    feed_solid = Input - feed_moist
+    product = feed_solid / (1 - InputData.AnF_operation['Dried_moist']['amount'])
+    remove = Input - product
+
+    # Resource use calculation
+    calc_resource(Input, product, remove, Eqpt, InputData, LCI)
+
+    return product

@@ -2,6 +2,11 @@
 History
 =======
 
+0.1.9 (2022-XX-XX)
+------------------
+* Add Multi-family and commercial Waste collection
+
+
 0.1.8 (2021-11-25)
 ------------------
 

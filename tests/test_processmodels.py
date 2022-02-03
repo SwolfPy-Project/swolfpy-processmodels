@@ -101,6 +101,11 @@ def test_HC():
     LCA_model_helper(sp.HC())
 
 
+def test_AnF():
+    assert sp.AnF.Process_Type == 'Treatment'
+    LCA_model_helper(sp.AnF())
+
+
 def test_Reproc():
     assert sp.Reproc.Process_Type == 'Reprocessing'
     LCA_model_helper(sp.Reproc())
@@ -126,6 +131,20 @@ def test_SF_Col():
     col_scheme = sp.SF_Col.scheme()
     col_scheme[('RWC', 'SSYW', 'SSR')] = 1
     LCA_model_helper(sp.SF_Col('SF_test', Collection_scheme=col_scheme))
+
+
+def test_MF_Col():
+    assert sp.MF_Col.Process_Type == 'Collection'
+    col_scheme = sp.MF_Col.scheme()
+    col_scheme[('RWC', 'SSYW', 'SSR')] = 1
+    LCA_model_helper(sp.MF_Col('MF_test', Collection_scheme=col_scheme))
+
+
+def test_COM_Col():
+    assert sp.COM_Col.Process_Type == 'Collection'
+    col_scheme = sp.COM_Col.scheme()
+    col_scheme[('RWC', 'SSYW', 'SSR')] = 1
+    LCA_model_helper(sp.COM_Col('COM_test', Collection_scheme=col_scheme))
 
 
 def test_Distance():

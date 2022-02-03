@@ -13,10 +13,13 @@ from .AD import AD
 from .SS_MRF import SS_MRF
 from .Reproc import Reproc
 from .SF_Col import SF_Col
+from .MF_Col import MF_Col
+from .COM_Col import COM_Col
 from .TS import TS
 from .HC import HC
 from .GC import GC
 from .RDF import RDF
+from .AnF import AnF
 
 
 __all__ = ['ProcessModel',
@@ -28,9 +31,13 @@ __all__ = ['ProcessModel',
            'SS_MRF',
            'Reproc',
            'SF_Col',
+           'MF_Col',
+           'COM_Col',
            'TS',
            'HC',
            'GC',
-           'RDF',]
+           'RDF',
+           'AnF',
+           ]
 
-__version__ = '0.1.8'
+__version__ = '0.1.9'
