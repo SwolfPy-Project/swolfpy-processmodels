@@ -109,7 +109,8 @@ class AnF(ProcessModel):
 
         # Mositure content of avoided maize grain is 14%
         # Source: maize grain, feed production, RoW - Ecoinvent
-        self._avoid_feed = self._Feed_sol / 0.86
+        self._avoid_feed = (self._Feed_sol / 0.86
+                            * self.InputData.AnF_operation['FeedSubFac']['amount'])
 
         self.LCI.add(('Technosphere', 'Feed_Production'), -self._avoid_feed * 1000)  # Mg to kg
 
