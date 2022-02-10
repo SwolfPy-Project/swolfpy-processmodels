@@ -239,11 +239,11 @@ class WTE(ProcessModel):
     def add_cost(self):
         self.Cost=pd.DataFrame(index=self.Index)
         self.Cost[('biosphere3', 'Capital_Cost')] = -npf.pmt(
-            rate=self.InputData.Economic_parameters['CF_I']['amount'],
+            rate=self.InputData.Economic_parameters['Inerest_rate']['amount'],
             nper=self.InputData.Economic_parameters['WTE_lifetime']['amount'],
-            pv=self.InputData.Economic_parameters['Unit_WTE_capital_cost']['amount'])
+            pv=self.InputData.Economic_parameters['Capital_cost']['amount'])
 
-        self.Cost[('biosphere3', 'Operational_Cost')] = [self.InputData.Operational_Cost[y]['amount'] for y in self.Index]
+        self.Cost[('biosphere3', 'Operational_Cost')] = self.InputData.Economic_parameters['O_M_cost']['amount']
 
     def setup_MC(self, seed=None):
         self.InputData.setup_MC(seed)
