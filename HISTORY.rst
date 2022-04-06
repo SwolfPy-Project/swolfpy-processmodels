@@ -2,9 +2,11 @@
 History
 =======
 
-0.1.9 (2022-XX-XX)
+0.1.9 (2022-04-06)
 ------------------
 * Add Multi-family and commercial Waste collection
+* Add Animal feed production
+* Refactor SF-collection model
 
 
 0.1.8 (2021-11-25)

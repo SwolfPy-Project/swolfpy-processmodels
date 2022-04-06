@@ -1,7 +1,7 @@
 .. General
 
 ==============================================================
-Life-Cylce Process Models for swolfpy (swolfpy_processmodels)
+Life-Cycle Process Models for SwolfPy (swolfpy_processmodels)
 ==============================================================
 
 .. image:: https://img.shields.io/pypi/v/swolfpy_processmodels.svg
@@ -83,7 +83,7 @@ Features
      - Calculates cost, emissions, and energy use associated with material recovery facilities.
    * - 8
      - Refuse-Derived Fuel (**RDF**)
-     - Calculates cost, emissions, and energy use associated with RDF prodcution facilities.
+     - Calculates cost, emissions, and energy use associated with RDF production facilities.
    * - 9
      - Reprocessing (**Reproc**)
      - Calculates emissions, mass flows, and resource use and recovery associated with recycling materials.	 
@@ -92,9 +92,17 @@ Features
      - Calculates cost, emissions, and energy use associated with Transfer Stations.
    * - 11
      - Single Family Collection (**SF_Col**)
-     - Calculates cost, emissions, and fossil fuel use associated with MSW collection.
-
-
+     - Calculates cost, emissions, and fossil fuel use associated with MSW collection from single family sector.
+   * - 12
+     - Multi Family Collection (**MF_Col**)
+     - Calculates cost, emissions, and fossil fuel use associated with MSW collection from multi-family sector.
+   * - 13
+     - Collection (**COM_Col**)
+     - Calculates cost, emissions, and fossil fuel use associated with MSW collection from commercial sector.
+   * - 14
+     - Animal Feed (**AnF**)
+     - Calculates cost, emissions, and energy use associated with conversion of food waste to animal feed and final use of produced feed.
+  
 .. Installation
 
 Installation
