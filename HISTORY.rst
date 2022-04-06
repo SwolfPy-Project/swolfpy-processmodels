@@ -26,7 +26,7 @@ History
 0.1.4 (2021-05-10)
 ------------------
 
-* New Life-cyle model: TS
+* New Life-cycle model: TS
 * Add Cost calculations
 
 
