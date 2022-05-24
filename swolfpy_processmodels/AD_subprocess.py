@@ -8,7 +8,7 @@ import numpy as np
 from copy import deepcopy
 
 
-### AD_Screan
+### AD_Screen
 def screen(input_flow, sep_eff, Material_Properties, LCI, flow_init):
     product = deepcopy(flow_init)
     residual = deepcopy(flow_init)
@@ -72,7 +72,7 @@ def Reactor(input_flow, CommonData, process_data, input_data, Material_Propertie
                          * CommonData.STP['m3CH4_to_kg']['amount']
                          * CommonData.MW['C']['amount'] / CommonData.MW['CH4']['amount'])
 
-    # Mehtane Balance
+    # Methane Balance
     CH4_fugitiv_mass_asC = (CH4_prod_mass_asC
                             * (1 - Biogas_gen['ad_collEff']['amount']))
 
@@ -203,7 +203,7 @@ def Dewater(input_flow, input_to_reactor, CommonData, process_data, input_data, 
                     * input_data.Dewater['ad_mcDigestate']['amount'])
                    / (1 - input_data.Dewater['ad_mcDigestate']['amount']))
 
-        # Liquid to reatment, recirculate water
+        # Liquid to treatment, recirculate water
         total_liq_to_treatment = (liq_rem
                                   * (1 - input_data.AD_operation['recircMax']['amount']))
 
@@ -352,7 +352,7 @@ def Dewater(input_flow, input_to_reactor, CommonData, process_data, input_data, 
         # Sludge to LF
         sludge_prod = liq_treatment_vol * CommonData.Leachate_treat['sludgef']['amount'] # Unit kg
 
-        # Resouce use
+        # Resource use
         lci.add(name=('Technosphere', 'Internal_Process_Transportation_Heavy_Duty_Diesel_Truck'),
                 flow=(input_data.Digestate_treatment['ad_distPOTW']['amount']
                       * liq_treatment_vol * 1000
