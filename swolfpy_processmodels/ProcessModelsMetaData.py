@@ -64,7 +64,7 @@ ProcessModelsMetaData['TS'] = {}
 ProcessModelsMetaData['TS']['Name'] = 'Transfer Station'
 ProcessModelsMetaData['TS']['Process_Type'] = 'Transfer_Station'
 ProcessModelsMetaData['TS']['File'] = 'TS.py'
-ProcessModelsMetaData['TS']['InputType'] = ['DryRes', 'WetRes', 'ORG', 'REC']
+ProcessModelsMetaData['TS']['InputType'] = ['RWC', 'SSYW', 'SSO', 'SSR', 'DryRes', 'WetRes', 'ORG', 'REC']
 
 ProcessModelsMetaData['HC'] = {}
 ProcessModelsMetaData['HC']['Process_Type'] = 'Treatment'
