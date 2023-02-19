@@ -1,10 +1,11 @@
-swolfpy_inputdata
+coverage
+jupyter
 numpy_financial
-xlrd
 pandas
 plotly
-jupyter
+pre-commit
+pylint
 pytest
 pytest-cov
-pytest-flake8
-coverage
+swolfpy_inputdata
+xlrd==1.2.0

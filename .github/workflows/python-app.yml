@@ -5,7 +5,7 @@ name: swolfpy-processmodels
 
 on:
   push:
-    branches: [ master ]
+    branches-ignore: []
   pull_request:
     branches: [ master ]
 
@@ -17,7 +17,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: [3.7, 3.8]
+        python-version: [3.9]
 
     steps:
     - uses: actions/checkout@v2
@@ -32,6 +32,7 @@ jobs:
         pip install https://github.com/SwolfPy-Project/swolfpy-inputdata/archive/refs/heads/master.zip
         pip install -r requirements.txt
 
-    - name: Test with pytest
+    - name: Pre-Commit
       run: |
-        py.test
+        git fetch origin master
+        pre-commit run --from-ref origin/master --to-ref HEAD --show-diff-on-failure
