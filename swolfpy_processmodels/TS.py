@@ -19,7 +19,7 @@ class TS(ProcessModel):
         self.InputData= TS_Input(input_data_path, process_name=self.process_name, CommonDataObjct=CommonDataObjct)
 
         self._Extened_Index = []
-        for i in ['ORG', 'DryRes', 'REC', 'WetRes']:
+        for i in ['RWC', 'SSR', 'SSYW', "SSO", 'ORG', 'DryRes', 'REC', 'WetRes']:
             for j in self.Index:
                 self._Extened_Index.append(i + '_' + j)
 
@@ -39,11 +39,11 @@ class TS(ProcessModel):
         self._residuals = np.zeros(n)
         self._recyclables = np.zeros(n)
         for i, j in enumerate(self._Extened_Index):
-            if 'DryRes' == j[0:6] or 'WetRes' == j[0:6]:
+            if 'DryRes' == j[0:6] or 'WetRes' == j[0:6] or "RWC" == j[0:3]:
                 self._residuals[i] = 1 / n
-            elif 'ORG'==j[0:3]:
+            elif 'ORG'==j[0:3] or 'SSYW'==j[0:4] or 'SSO'==j[0:3]:
                 self._organics[i] = 1 / n
-            elif 'REC'==j[0:3]:
+            elif 'REC'==j[0:3] or 'SSR'==j[0:3]:
                 self._recyclables[i] = 1 / n
 
         self.LCI_Waste.add('Other_Residual', self._residuals)
