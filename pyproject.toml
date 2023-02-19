@@ -307,5 +307,14 @@ disable = [
   "consider-using-dict-items",
   "too-many-branches",
   "super-init-not-called",
-  "missing-module-docstring"
+  "missing-module-docstring",
+  "no-member",
+  "useless-return",
+  "consider-using-generator",
+  "too-many-arguments",
+  "pointless-string-statement",
+  "too-many-statements",
+  "too-many-locals",
+  "too-many-lines",
+
 ]

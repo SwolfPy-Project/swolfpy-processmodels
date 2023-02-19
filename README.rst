@@ -6,7 +6,7 @@ Life-Cycle Process Models for SwolfPy (swolfpy_processmodels)
 
 .. image:: https://img.shields.io/pypi/v/swolfpy_processmodels.svg
         :target: https://pypi.python.org/pypi/swolfpy_processmodels
-        
+
 .. image:: https://img.shields.io/pypi/pyversions/swolfpy_processmodels.svg
     :target: https://pypi.org/project/swolfpy_processmodels/
     :alt: Supported Python Versions
@@ -55,12 +55,12 @@ Features
    :widths: auto
    :header-rows: 1
 
-   * - 
-     - Process model 
+   * -
+     - Process model
      - Description
    * - 1
      - Landfill (**LF**)
-     - Calculates emissions, material use, and energy use associated with construction, operations, 
+     - Calculates emissions, material use, and energy use associated with construction, operations,
        closure and post-closure activities, landfill gas and leachate management, and carbon storage.
    * - 2
      - Waste-to-Energy (**WTE**)
@@ -68,7 +68,7 @@ Features
    * - 3
      - Gasification & Syngas Combustion (**GC**)
      - Calculates emissions, mass flows, and resource use and recovery for the GC process (Produced syngas from
-       gasification is combusted to produce electricity by steam turbine). 
+       gasification is combusted to produce electricity by steam turbine).
    * - 4
      - Composting (**Comp**)
      - Calculates emissions, mass flows, and resource use and recovery for aerobic composting process and final use of compost.
@@ -86,7 +86,7 @@ Features
      - Calculates cost, emissions, and energy use associated with RDF production facilities.
    * - 9
      - Reprocessing (**Reproc**)
-     - Calculates emissions, mass flows, and resource use and recovery associated with recycling materials.	 
+     - Calculates emissions, mass flows, and resource use and recovery associated with recycling materials.
    * - 10
      - Transfer Station (**TS**)
      - Calculates cost, emissions, and energy use associated with Transfer Stations.
@@ -102,7 +102,7 @@ Features
    * - 14
      - Animal Feed (**AnF**)
      - Calculates cost, emissions, and energy use associated with conversion of food waste to animal feed and final use of produced feed.
-  
+
 .. Installation
 
 Installation
@@ -127,7 +127,7 @@ Installation
 
 6- Use in python (e.g., Landfill model)::
 
-        import swolfpy_processmodels as sppm 
+        import swolfpy_processmodels as sppm
         model = sppm.LF()
         model.calc()
         LCI_report = model.report()
