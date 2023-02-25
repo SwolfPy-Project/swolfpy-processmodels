@@ -167,7 +167,7 @@ class LF(ProcessModel):
             self.InputData.LF_Op["optime"]["amount"] + self.InputData.Flare["TimeReq"]["amount"]
         )
 
-        NMOC_high = np.where(NMOC_CutOn >= self.InputData.Flare["NMOC_Cufoff"]["amount"])[0]
+        NMOC_high = np.where(NMOC_CutOn >= self.InputData.Flare["NMOC_Cutoff"]["amount"])[0]
         if len(NMOC_high):
             self.GasColPlan.loc["flareOn", self._plan] = NMOC_high[0]
             self.GasColPlan.loc["flareOff", self._plan] = (
@@ -183,11 +183,11 @@ class LF(ProcessModel):
 
         if (
             NMOC_CutOff[int(self.GasColPlan.loc["flareOff", self._plan])]
-            > self.InputData.Flare["NMOC_Cufoff"]["amount"]
+            > self.InputData.Flare["NMOC_Cutoff"]["amount"]
         ):
             NMOC_low = np.where(
                 NMOC_CutOff[int(self.GasColPlan.loc["flareOff", self._plan] + 1) :]
-                <= self.InputData.Flare["NMOC_Cufoff"]["amount"]
+                <= self.InputData.Flare["NMOC_Cutoff"]["amount"]
             )[0]
             if len(NMOC_low):
                 self.GasColPlan.loc["flareOff", self._plan] += 1 + NMOC_low[0]
@@ -235,7 +235,7 @@ class LF(ProcessModel):
         self._LFG_Ox_Eff[self.filter_ox_2] = self.InputData.Ox["ox_col"]["amount"]
         self._LFG_Ox_Eff[self.filter_ox_1] = self.InputData.Ox["ox_fincov"]["amount"]
 
-        # calculating average collection and oxdiation
+        # calculating average collection and oxidation
         self.Average_Collection = pd.Series(self.LFG_Coll_Eff.mean(axis=1), index=index_t)
         self.Average_Oxidation = pd.Series(self._LFG_Ox_Eff.mean(axis=1), index=index_t)
 
@@ -273,7 +273,7 @@ class LF(ProcessModel):
         )
 
         # Methane generation
-        self._Methan_gen_by_year = (
+        self._Methane_gen_by_year = (
             self._param2["L0"].values.reshape(n_waste_fracs, 1)
             * self._param2["solid Content"].values.reshape(n_waste_fracs, 1)
             * (
@@ -287,7 +287,7 @@ class LF(ProcessModel):
             )
         )
 
-        self.LFG["Total generated Methane"] = self._Methan_gen_by_year.sum(axis=1)
+        self.LFG["Total generated Methane"] = self._Methane_gen_by_year.sum(axis=1)
 
         self.LFG["Fraction of L0 Generated"] = np.divide(
             self.LFG["Total generated Methane"].values,
@@ -298,7 +298,7 @@ class LF(ProcessModel):
 
         # Methane collected
         self.LFG["Total Methane collected"] = np.multiply(
-            self._Methan_gen_by_year, self.Average_Collection.values / 100
+            self._Methane_gen_by_year, self.Average_Collection.values / 100
         ).sum(axis=1)
 
         self.LFG["Collection Eff"] = np.divide(
@@ -335,7 +335,7 @@ class LF(ProcessModel):
 
         # Percent of generation that combusted
         comb_col = np.multiply(frac_cob, self.Average_Collection.values / 100)
-        self.LFG["Total Methane combusted"] = np.multiply(self._Methan_gen_by_year, comb_col).sum(
+        self.LFG["Total Methane combusted"] = np.multiply(self._Methane_gen_by_year, comb_col).sum(
             axis=1
         )
 
@@ -381,7 +381,7 @@ class LF(ProcessModel):
             1 - self.Average_Collection.values / 100, self.Average_Oxidation.values / 100
         )
 
-        self.LFG["Total Methane oxidized"] = np.multiply(self._Methan_gen_by_year, oxd_colec).sum(
+        self.LFG["Total Methane oxidized"] = np.multiply(self._Methane_gen_by_year, oxd_colec).sum(
             axis=1
         )
 
@@ -555,7 +555,7 @@ class LF(ProcessModel):
 
     def _Leachate(self):
         """
-        Calculates the leachate flow and concentraions.
+        Calculates the leachate flow and concentrations.
         """
         self._n_lcht = 100
         # LEACHATE GENERATION, QUANTITY AND CONSTITUENTS
@@ -795,7 +795,7 @@ class LF(ProcessModel):
             "Silver, ion",
         ]
 
-        # Calculating Slude generation and transport
+        # Calculating Sludge generation and transport
         LF_sldg_BOD = self.InputData.BOD["LF_sldg_per_BOD"]["amount"] * BOD_removed
 
         LF_sldg_PO4 = (
@@ -861,7 +861,7 @@ class LF(ProcessModel):
 
     # Life-Cycle Inventory
     def _Material_energy_use(self):
-        # Electricity used for office and maitenance buildings
+        # Electricity used for office and maintenance buildings
         bld_elec = 0.081  # kWh/Mg
         self.LCI.add("Electricity_consumption", bld_elec)
 

@@ -278,14 +278,14 @@ class GC(ProcessModel):
             self.energy.loc["Heat Dryer", :] = 0.0, "MJ/Mg RDF"
 
         # Steam turbine for electricity production
-        self.energy.loc["Elec Steam_Turbin HP", :] = (
+        self.energy.loc["Elec Steam_Turbine HP", :] = (
             self.energy.loc["LHV_SYNGAS", "value"]
             * self.InputData.Energy["elec_gen_eff_HP"]["amount"]
             / 3.6
         ), "kWh/Mg RDF"
 
         # Elec produced from MP steam recovered from excess heat
-        self.energy.loc["Elec Steam_Turbin MP", :] = (
+        self.energy.loc["Elec Steam_Turbine MP", :] = (
             (
                 self.energy.loc["Sensible_Heat_SYNGAS", "value"]
                 * self.InputData.Energy["heat_rec_eff"]["amount"]
@@ -304,8 +304,8 @@ class GC(ProcessModel):
 
         # Net electricity production
         self.energy.loc["Net Elec prod", :] = (
-            self.energy.loc["Elec Steam_Turbin HP", "value"]
-            + self.energy.loc["Elec Steam_Turbin MP", "value"]
+            self.energy.loc["Elec Steam_Turbine HP", "value"]
+            + self.energy.loc["Elec Steam_Turbine MP", "value"]
             - self.energy.loc["Elec Internal_use", "value"]
             - self.energy.loc["Elec Dryer", "value"]
         ), "kWh/Mg RDF"

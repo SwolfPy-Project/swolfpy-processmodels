@@ -2,7 +2,7 @@
 from copy import deepcopy
 
 
-### Screan
+### Screen
 def screen(input_flow, sep_eff, Op_param, lci, flow_init):
     product = deepcopy(flow_init)
     residual = deepcopy(flow_init)
@@ -162,7 +162,7 @@ def ac_comp(input_flow, common_data, process_data, input_data, assumed_comp, lci
     )
     lci.add(name="VOCs emitted", flow=Biofilter_VOCs)
 
-    # Caculating the moisture
+    # Calculating the moisture
     input_flow.update(assumed_comp)
     product.data["moist_cont"] = (
         product.data["sol_cont"].values
@@ -222,7 +222,7 @@ def post_screen(input_flow, sep_eff, Op_param, lci, flow_init):
     return product, residual
 
 
-### Vaccuum
+### Vacuum
 def vacuum(input_flow, sep_eff, Op_param, lci, flow_init):
     product = deepcopy(flow_init)
     vacuumed = deepcopy(flow_init)
@@ -336,7 +336,7 @@ def curing(input_flow, common_data, process_data, input_data, assumed_comp, lci,
     )
     lci.add(name="VOCs emitted", flow=Biofilter_VOCs)
 
-    # Caculating the moisture
+    # Calculating the moisture
     input_flow.update(assumed_comp)
     product.data["moist_cont"] = (
         product.data["sol_cont"].values

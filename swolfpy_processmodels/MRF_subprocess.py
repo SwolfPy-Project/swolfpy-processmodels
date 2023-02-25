@@ -27,8 +27,8 @@ def calc_resource(total_throughput, remaining, removed, Eqpt, InputData, LCI):
     LPG_use = sum(total_throughput) * Eqpt["LPG_use"]["amount"] * Aloc
 
     Cap = Eqpt["Investment_cost"]["amount"] + Eqpt["Installation_cost"]["amount"]
-    Rate = InputData.Constr_cost["Inerest_rate"]["amount"]
-    Lftime = Eqpt["LifeTime"]["amount"]
+    Rate = InputData.Constr_cost["Interest_rate"]["amount"]
+    Lifetime = Eqpt["LifeTime"]["amount"]
     TotalHour = (
         InputData.Labor["Hr_shift"]["amount"]
         * InputData.Labor["Shift_day"]["amount"]
@@ -36,7 +36,7 @@ def calc_resource(total_throughput, remaining, removed, Eqpt, InputData, LCI):
     )
 
     # Average Cost of Ownership ($/Mg)
-    AveCostOwner = (npf.pmt(Rate, Lftime, -Cap) + Eqpt["O&M"]["amount"]) / (
+    AveCostOwner = (npf.pmt(Rate, Lifetime, -Cap) + Eqpt["O&M"]["amount"]) / (
         TotalHour * Eqpt["Max_input"]["amount"] * Eqpt["frac_MaxInput"]["amount"]
     )
 
@@ -362,7 +362,7 @@ def Baler_1Way(OCC, Non_OCC_Fiber, InputData, LCI):
 
     # Wire use calculation
     # Bale volume
-    Volumne = (
+    Volume = (
         Eqpt["Bale_Width"]["amount"] * Eqpt["Bale_Length"]["amount"] * Eqpt["Bale_Height"]["amount"]
     )
     # Bale Wire Length
@@ -377,7 +377,7 @@ def Baler_1Way(OCC, Non_OCC_Fiber, InputData, LCI):
             OCC / InputData.Rec_BaleDens["OCC"]["amount"]
             + Non_OCC_Fiber / InputData.Rec_BaleDens["Non_OCC_Fiber"]["amount"]
         )
-        / Volumne
+        / Volume
         * Wire_len
         / InputData.Baler_Wire["Len_to_Mass"]["amount"]
     )
@@ -422,7 +422,7 @@ def Baler(Input, InputData, LCI):
 
     # Wire use calculation
     # Bale volume
-    Volumne = (
+    Volume = (
         Eqpt["Bale_Width"]["amount"] * Eqpt["Bale_Length"]["amount"] * Eqpt["Bale_Height"]["amount"]
     )
     # Bale Wire Length
@@ -435,7 +435,7 @@ def Baler(Input, InputData, LCI):
     Wire_use = (
         baled
         / Eqpt["Bale_Density"]["amount"]
-        / Volumne
+        / Volume
         * Wire_len
         / InputData.Baler_Wire["Len_to_Mass"]["amount"]
     )
@@ -784,7 +784,7 @@ def Baler_2Way(Input, InputData, LCI):
     calc_resource(baled, baled, baled, Eqpt, InputData, LCI)
 
     # Density
-    Density = np.ones(len(LCI.index)) * 10**12  # using big density for non-recycab
+    Density = np.ones(len(LCI.index)) * 10**12  # using big density for non-recyclables
     Density[[28, 29, 30, 32]] = InputData.Rec_BaleDens["Aluminous"]["amount"]
     Density[[26, 27, 31]] = InputData.Rec_BaleDens["Ferrous"]["amount"]
     Density[[18, 19]] = InputData.Rec_BaleDens["HDPE"]["amount"]
@@ -793,7 +793,7 @@ def Baler_2Way(Input, InputData, LCI):
 
     # Wire use calculation
     # Bale volume
-    Volumne = (
+    Volume = (
         Eqpt["Bale_Width"]["amount"] * Eqpt["Bale_Length"]["amount"] * Eqpt["Bale_Height"]["amount"]
     )
     # Bale Wire Length
@@ -804,7 +804,7 @@ def Baler_2Way(Input, InputData, LCI):
     )
     # Wire use
     Wire_use = (
-        (Input / Density) / Volumne * Wire_len / InputData.Baler_Wire["Len_to_Mass"]["amount"]
+        (Input / Density) / Volume * Wire_len / InputData.Baler_Wire["Len_to_Mass"]["amount"]
     )
 
     # Add Wire use to LCI

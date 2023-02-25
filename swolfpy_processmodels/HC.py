@@ -22,11 +22,11 @@ class HC(ProcessModel):
     def calc(self):
         self.LCI = LCI(index=self.Index)
 
-        # Incominh Mass
+        # Incoming Mass
         self.input_flow = Flow(self.Material_Properties)
         self.input_flow.init_flow(1000)
 
-        # Active Compostig
+        # Active Composting
         self.final_compost = active_comp(
             input_flow=self.input_flow,
             common_data=self.CommonData,
@@ -49,7 +49,7 @@ class HC(ProcessModel):
 
         # Cost
         op_cost_tot = -npf.pmt(
-            rate=self.InputData.Economic_parameters["Inerest_rate"]["amount"],
+            rate=self.InputData.Economic_parameters["Interest_rate"]["amount"],
             nper=self.InputData.Economic_parameters["lifetime"]["amount"],
             pv=self.InputData.Economic_parameters["comp_cost"]["amount"],
         )
@@ -95,7 +95,7 @@ class HC(ProcessModel):
                 report[x][y] = {}
 
         for y in self.Index:
-            # Output Technospphere Database
+            # Output Technosphere Database
             report["Technosphere"][y][("Technosphere", "Nitrogen_Fertilizer")] = lci_report[
                 ("Technosphere", "Nitrogen_Fertilizer")
             ][y]

@@ -69,15 +69,15 @@ def calc_resource(total_throughput, remaining, removed, Eq, InputData, LCI):
     LPG_use = sum(total_throughput) * Eq["LPG_use"]["amount"] * Aloc
 
     Cap = Eq["Investment_cost"]["amount"] + Eq["Installation_cost"]["amount"]
-    Rate = InputData.Constr_cost["Inerest_rate"]["amount"]
-    Lftime = Eq["LifeTime"]["amount"]
+    Rate = InputData.Constr_cost["Interest_rate"]["amount"]
+    LifeTime = Eq["LifeTime"]["amount"]
     TotalHour = (
         InputData.Labor["Hr_shift"]["amount"]
         * InputData.Labor["Shift_day"]["amount"]
         * InputData.Labor["Day_year"]["amount"]
     )
     # Average Cost of Ownership ($/Mg)
-    AveCostOwner = (npf.pmt(Rate, Lftime, -Cap) + Eq["O&M"]["amount"]) / (
+    AveCostOwner = (npf.pmt(Rate, LifeTime, -Cap) + Eq["O&M"]["amount"]) / (
         TotalHour * Eq["Max_input"]["amount"] * Eq["frac_MaxInput"]["amount"]
     )
 

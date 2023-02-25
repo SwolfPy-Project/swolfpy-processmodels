@@ -68,7 +68,7 @@ class AnF(ProcessModel):
         # Shredding/Grinding
         self._Shred = Shredder(Input=self._MS_rmnd, InputData=self.InputData, LCI=self.LCI)
 
-        # Sterlizing
+        # Sterilizing
         self._Sterilized = Sterilizer(Input=self._Shred, InputData=self.InputData, LCI=self.LCI)
 
         # Dewatering
@@ -107,7 +107,7 @@ class AnF(ProcessModel):
 
         # Calculating avoided feed production
 
-        # Mositure content of avoided maize grain is 14%
+        # Moisture content of avoided maize grain is 14%
         # Source: maize grain, feed production, RoW - Ecoinvent
         self._avoid_feed = (
             self._Feed_sol / 0.86 * self.InputData.AnF_operation["FeedSubFac"]["amount"]
@@ -171,7 +171,7 @@ class AnF(ProcessModel):
         Unit_capital_cost = Land_cost + Constr_cost + Miscellaneous_Costs  # $/tpd
         Unit_capital_cost /= self.InputData.Labor["Day_year"]["amount"]  # $/t.yr
         capital_cost = -npf.pmt(
-            rate=self.InputData.Constr_cost["Inerest_rate"]["amount"],
+            rate=self.InputData.Constr_cost["Interest_rate"]["amount"],
             nper=self.InputData.Constr_cost["lifetime"]["amount"],
             pv=Unit_capital_cost,
         )
@@ -199,7 +199,7 @@ class AnF(ProcessModel):
         lci_report = self.LCI.report(input_mass=self._Input)
 
         for y in self.Index:
-            # Output Technospphere Database
+            # Output Technosphere Database
             report["Technosphere"][y][("Technosphere", "Electricity_consumption")] = lci_report[
                 ("Technosphere", "Electricity_consumption")
             ][y]

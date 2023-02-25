@@ -237,7 +237,7 @@ class RDF(ProcessModel):
         Unit_capital_cost = Land_cost + Constr_cost + Miscellaneous_Costs  # $/tpd
         Unit_capital_cost /= self.InputData.Labor["Day_year"]["amount"]  # $/t.yr
         capital_cost = -npf.pmt(
-            rate=self.InputData.Constr_cost["Inerest_rate"]["amount"],
+            rate=self.InputData.Constr_cost["Interest_rate"]["amount"],
             nper=self.InputData.Constr_cost["lifetime"]["amount"],
             pv=Unit_capital_cost,
         )

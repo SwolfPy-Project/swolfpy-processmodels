@@ -34,8 +34,6 @@ class Reproc(ProcessModel):
                             "amount"
                         ]
 
-        # self.LCI = self.Reprocessing.read_output_from_SWOLF('ReProc',Path(__file__).parent.parent/"Data/Material_Reprocessing_BW2.csv")
-
     def setup_MC(self, seed=None):
         self.InputData.setup_MC(seed)
 

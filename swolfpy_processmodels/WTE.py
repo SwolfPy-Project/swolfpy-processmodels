@@ -289,7 +289,7 @@ class WTE(ProcessModel):
     def add_cost(self):
         self.Cost = pd.DataFrame(index=self.Index)
         self.Cost[("biosphere3", "Capital_Cost")] = -npf.pmt(
-            rate=self.InputData.Economic_parameters["Inerest_rate"]["amount"],
+            rate=self.InputData.Economic_parameters["Interest_rate"]["amount"],
             nper=self.InputData.Economic_parameters["WTE_lifetime"]["amount"],
             pv=self.InputData.Economic_parameters["Capital_cost"]["amount"],
         )
@@ -336,7 +336,7 @@ class WTE(ProcessModel):
 
             Waste[y]["Fe"] = self.Post_Combustion_Solids["Ferrous_Recovery"][y]
 
-            ### Output Technospphere Database
+            ### Output Technosphere Database
             Technosphere[y][("Technosphere", "Electricity_production")] = self.Energy_Calculations[
                 "Net_Electricity_Produced"
             ][y]

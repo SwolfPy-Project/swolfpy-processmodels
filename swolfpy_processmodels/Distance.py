@@ -16,7 +16,7 @@ class Distance:
     * Cargo Ship
 
     :param data: `Dictionary` that includes `Pandas DataFrame` for the distances between the process models as `value` and
-        tranport modes as `key`. `DataFrame` should use the name of processes as both `column` and row `index`.
+        transport modes as `key`. `DataFrame` should use the name of processes as both `column` and row `index`.
     :type Data: dict
 
     :Example:

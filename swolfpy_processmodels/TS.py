@@ -17,16 +17,16 @@ class TS(ProcessModel):
             input_data_path, process_name=self.process_name, CommonDataObjct=CommonDataObjct
         )
 
-        self._Extened_Index = []
+        self._Extended_Index = []
         for i in ["RWC", "SSR", "SSYW", "SSO", "ORG", "DryRes", "REC", "WetRes"]:
             for j in self.Index:
-                self._Extened_Index.append(i + "_" + j)
+                self._Extended_Index.append(i + "_" + j)
 
     # %% Calc Function
     def calc(self):
-        n = len(self._Extened_Index)
-        self.LCI_Waste = LCI(self._Extened_Index)
-        self.LCI = LCI(self._Extened_Index)
+        n = len(self._Extended_Index)
+        self.LCI_Waste = LCI(self._Extended_Index)
+        self.LCI = LCI(self._Extended_Index)
 
         ### Initial mass
         self._Input = np.array([1 / n] * n)
@@ -37,7 +37,7 @@ class TS(ProcessModel):
         self._organics = np.zeros(n)
         self._residuals = np.zeros(n)
         self._recyclables = np.zeros(n)
-        for i, j in enumerate(self._Extened_Index):
+        for i, j in enumerate(self._Extended_Index):
             if "DryRes" == j[0:6] or "WetRes" == j[0:6] or "RWC" == j[0:3]:
                 self._residuals[i] = 1 / n
             elif "ORG" == j[0:3] or "SSYW" == j[0:4] or "SSO" == j[0:3]:
@@ -83,7 +83,7 @@ class TS(ProcessModel):
         Miscellaneous_Costs += (
             self.InputData.Constr_cost["Landscaping_rate"]["amount"] / 10000 * Land_req
         )  # 1 ha = 10000m2
-        # Assumes fenc along three sides of square
+        # Assumes fence along three sides of square
         Miscellaneous_Costs += (
             np.sqrt(Land_req * 1000)
             * 3
@@ -95,7 +95,7 @@ class TS(ProcessModel):
         Unit_capital_cost = Land_cost + Constr_cost + Miscellaneous_Costs  # $/tpd
         Unit_capital_cost /= self.InputData.Labor["Day_year"]["amount"]  # $/t.yr
         capital_cost = -npf.pmt(
-            rate=self.InputData.Constr_cost["Inerest_rate"]["amount"],
+            rate=self.InputData.Constr_cost["Interest_rate"]["amount"],
             nper=self.InputData.Constr_cost["lifetime"]["amount"],
             pv=Unit_capital_cost,
         )

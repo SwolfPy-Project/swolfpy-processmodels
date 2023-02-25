@@ -79,7 +79,7 @@ class Flow:
     Parameters
     ----------
     material_properties : ``pandas.DataFrame``
-        Materail properties of the waste fractions.
+        Material properties of the waste fractions.
     """
 
     def __init__(self, material_properties):
@@ -191,7 +191,7 @@ def compost_use(
         )
 
         if input_data.Compost_use["fertOff"]["amount"] == 1:
-            # Nutrients availble in the final compost
+            # Nutrients available in the final compost
             Navail = input_flow.data["N_cont"].values * common_data.Land_app["MFEN"]["amount"]
             Pavail = input_flow.data["P_cont"].values * common_data.Land_app["MFEP"]["amount"]
             Kavail = input_flow.data["K_cont"].values * common_data.Land_app["MFEK"]["amount"]
@@ -331,7 +331,7 @@ def compost_use(
             flow=(input_flow.data["mass"].values / 1000) * common_data.ADC["Aloc_ADC"]["amount"],
         )
 
-        # Amomonium emission from LF (Calculated base on the ammomium/N_cont ratio in LF)
+        # Ammonium emission from LF (Calculated base on the ammonium/N_cont ratio in LF)
         NH4_LF = common_data.ADC["Frac_NH4"]["amount"] * input_flow.data["N_cont"]
         NH4_GW = NH4_LF * (1 - common_data.ADC["LCRS_eff"]["amount"])
         NH4_SW = (

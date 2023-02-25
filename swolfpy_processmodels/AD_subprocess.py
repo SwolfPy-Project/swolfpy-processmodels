@@ -86,7 +86,7 @@ def Reactor(input_flow, CommonData, process_data, input_data, Material_Propertie
     )
 
     # Methane Balance
-    CH4_fugitiv_mass_asC = CH4_prod_mass_asC * (1 - Biogas_gen["ad_collEff"]["amount"])
+    CH4_fugitive_mass_asC = CH4_prod_mass_asC * (1 - Biogas_gen["ad_collEff"]["amount"])
 
     CH4_Energy_rec_asC = (
         CH4_prod_mass_asC
@@ -150,11 +150,11 @@ def Reactor(input_flow, CommonData, process_data, input_data, Material_Propertie
 
     lci.add(
         name="Fugitive (Leaked) Methane",
-        flow=(CH4_fugitiv_mass_asC * CommonData.MW["CH4"]["amount"] / CommonData.MW["C"]["amount"]),
+        flow=(CH4_fugitive_mass_asC * CommonData.MW["CH4"]["amount"] / CommonData.MW["C"]["amount"]),
     )
 
     lci.add(
-        name="Carbon dioxide, non-fossil from comubstion",
+        name="Carbon dioxide, non-fossil from combustion",
         flow=(CO2_from_CH4Comb * CommonData.MW["CO2"]["amount"] / CommonData.MW["C"]["amount"]),
     )
 
@@ -694,7 +694,7 @@ def curing(
         product.data["mass"] = product.data["moist_cont"].values + product.data["sol_cont"].values
 
         # Resource use
-        loder_dsl = (
+        loader_dsl = (
             input_flow.data["mass"].values
             / 1000
             * input_data.Loader["hpFEL"]["amount"]
@@ -720,7 +720,7 @@ def curing(
 
         lci.add(
             name=("Technosphere", "Equipment_Diesel"),
-            flow=(loder_dsl + WC_shred_dsl + Windrow_turner_dsl),
+            flow=(loader_dsl + WC_shred_dsl + Windrow_turner_dsl),
         )
 
     return product, WC_SR

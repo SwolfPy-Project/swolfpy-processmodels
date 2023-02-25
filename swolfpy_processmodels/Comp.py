@@ -38,7 +38,7 @@ class Comp(ProcessModel):
         )
 
         ### Secondary Pre_screen
-        self.S2_to_shredding, self.S2_residuls = screen(
+        self.S2_to_shredding, self.S2_residuals = screen(
             input_flow=self.S1_overs,
             sep_eff=self.process_data["Pre Screen 2"].values / 100,
             Op_param=self.InputData.Screen,
@@ -46,7 +46,7 @@ class Comp(ProcessModel):
             flow_init=self.flow_init,
         )
 
-        ### Shredding/Grinding of seconday screen's unders
+        ### Shredding/Grinding of secondary screen's unders
         self.shred = shredding(
             self.S2_to_shredding, self.InputData.Shredding, self.LCI, self.flow_init
         )
@@ -93,7 +93,7 @@ class Comp(ProcessModel):
         self.substrate_to_cu, self.vac_res = vacuum(
             self.substrate_to_vac,
             self.process_data["Vacuum"].values / 100,
-            self.InputData.Vaccum_sys,
+            self.InputData.Vacuum_sys,
             self.LCI,
             self.flow_init,
         )
@@ -150,7 +150,7 @@ class Comp(ProcessModel):
             flow=(
                 self.ps_res.data["mass"].values
                 + self.vac_res.data["mass"].values
-                + self.S2_residuls.data["mass"].values
+                + self.S2_residuals.data["mass"].values
             )
             / 1000,
         )
@@ -182,7 +182,7 @@ class Comp(ProcessModel):
 
         ### Cost Calculation
         capital_cost = -npf.pmt(
-            rate=self.InputData.Economic_parameters["Inerest_rate"]["amount"],
+            rate=self.InputData.Economic_parameters["Interest_rate"]["amount"],
             nper=self.InputData.Economic_parameters["lifetime"]["amount"],
             pv=self.InputData.Economic_parameters["Unit_capital_cost"]["amount"],
         )
@@ -257,7 +257,7 @@ class Comp(ProcessModel):
             ### Output Waste Database
             report["Waste"][y]["Other_Residual"] = lci_report["Other_Residual"][y]
 
-            ### Output Technospphere Database
+            ### Output Technosphere Database
             report["Technosphere"][y][("Technosphere", "Electricity_consumption")] = lci_report[
                 ("Technosphere", "Electricity_consumption")
             ][y]

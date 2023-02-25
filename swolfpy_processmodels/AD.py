@@ -53,13 +53,13 @@ class AD(ProcessModel):
         )
 
         ### Secondary Pre_screen
-        self.S2_to_curing, self.S2_residuls = screen(
+        self.S2_to_curing, self.S2_residuals = screen(
             self.S1_overs,
             self.process_data["Pre Screen 2"].values / 100,
             self.flow_init,
         )
 
-        self.LCI.add(name="Residual", flow=self.S2_residuls.data["mass"].values / 1000)
+        self.LCI.add(name="Residual", flow=self.S2_residuals.data["mass"].values / 1000)
 
         # Dsl use for grinding
         self.LCI.add(
@@ -184,7 +184,7 @@ class AD(ProcessModel):
 
         ### Cost Calculation
         capital_cost = -npf.pmt(
-            rate=self.InputData.Economic_parameters["Inerest_rate"]["amount"],
+            rate=self.InputData.Economic_parameters["Interest_rate"]["amount"],
             nper=self.InputData.Economic_parameters["lifetime"]["amount"],
             pv=self.InputData.Economic_parameters["Unit_capital_cost"]["amount"],
         )
@@ -259,7 +259,7 @@ class AD(ProcessModel):
             + self.lci_report["Carbon dioxide, non-fossil _ Curing"].values
             + self.lci_report["Carbon dioxide, non-fossil"].values
             + self.lci_report["Carbon dioxide, non-fossil (in biogas)"].values
-            + self.lci_report["Carbon dioxide, non-fossil from comubstion"].values
+            + self.lci_report["Carbon dioxide, non-fossil from combustion"].values
         )
 
         # NMVOC, non-methane volatile organic compounds, unspecified origin ('air',)
@@ -432,7 +432,7 @@ class AD(ProcessModel):
         source = []
         target = []
         value = []
-        lable = [
+        label = [
             "Incoming Mass",
             "Screen 1",
             "Screen 2",
@@ -448,125 +448,125 @@ class AD(ProcessModel):
             "Makeup Water",
             "Wood Chips",
         ]
-        lable_link = []
+        label_link = []
         color_link = []
 
         # Link for colors: https://www.rapidtables.com/web/color/RGB_Color.html
 
         self.Input.update(composition)
-        source.append(lable.index("Incoming Mass"))
-        target.append(lable.index("Screen 1"))
+        source.append(label.index("Incoming Mass"))
+        target.append(label.index("Screen 1"))
         value.append(self.Input.flow)
-        lable_link.append("Input")
+        label_link.append("Input")
         self.S1_unders.update(composition)
         color_link.append("rgba({}, {}, {}, 0.8)".format(*(128, 128, 0)))  # Olive
 
-        source.append(lable.index("Screen 1"))
-        target.append(lable.index("Add Water"))
+        source.append(label.index("Screen 1"))
+        target.append(label.index("Add Water"))
         value.append(self.S1_unders.flow)
-        lable_link.append("S1_unders")
+        label_link.append("S1_unders")
         color_link.append("rgba({}, {}, {}, 0.8)".format(*(128, 128, 0)))  # Olive
 
         self.S1_overs.update(composition)
-        source.append(lable.index("Screen 1"))
-        target.append(lable.index("Screen 2"))
+        source.append(label.index("Screen 1"))
+        target.append(label.index("Screen 2"))
         value.append(self.S1_overs.flow)
-        lable_link.append("S1_overs")
+        label_link.append("S1_overs")
         color_link.append("rgba({}, {}, {}, 0.8)".format(*(128, 128, 128)))  # Gray
 
-        self.S2_residuls.update(composition)
-        source.append(lable.index("Screen 2"))
-        target.append(lable.index("Residuals"))
-        value.append(self.S2_residuls.flow)
-        lable_link.append("S2_residuls")
+        self.S2_residuals.update(composition)
+        source.append(label.index("Screen 2"))
+        target.append(label.index("Residuals"))
+        value.append(self.S2_residuals.flow)
+        label_link.append("S2_residuals")
         color_link.append("rgba({}, {}, {}, 0.8)".format(*(128, 128, 128)))  # Gray
 
         self.S2_to_curing.update(composition)
-        source.append(lable.index("Screen 2"))
-        target.append(lable.index("Mixer"))
+        source.append(label.index("Screen 2"))
+        target.append(label.index("Mixer"))
         value.append(self.S2_to_curing.flow)
-        lable_link.append("S2_to_curing")
+        label_link.append("S2_to_curing")
         color_link.append("rgba({}, {}, {}, 0.8)".format(*(128, 128, 0)))  # Olive
 
         self.to_reactor.update(composition)
-        source.append(lable.index("Add Water"))
-        target.append(lable.index("Reactor"))
+        source.append(label.index("Add Water"))
+        target.append(label.index("Reactor"))
         value.append(self.to_reactor.flow)
-        lable_link.append("to_reactor")
+        label_link.append("to_reactor")
         color_link.append("rgba({}, {}, {}, 0.8)".format(*(85, 107, 47)))  # dark olive green
 
         self.digestate.update(composition)
-        source.append(lable.index("Reactor"))
-        target.append(lable.index("Dewater"))
+        source.append(label.index("Reactor"))
+        target.append(label.index("Dewater"))
         value.append(self.digestate.flow)
-        lable_link.append("digestate")
+        label_link.append("digestate")
         color_link.append("rgba({}, {}, {}, 0.8)".format(*(107, 142, 35)))  # olive drab
 
         self.Dig_to_Curing_1.update(composition)
-        source.append(lable.index("Dewater"))
-        target.append(lable.index("Mixer"))
+        source.append(label.index("Dewater"))
+        target.append(label.index("Mixer"))
         value.append(self.Dig_to_Curing_1.flow)
-        lable_link.append("Dig_to_Curing_1")
+        label_link.append("Dig_to_Curing_1")
         color_link.append("rgba({}, {}, {}, 0.8)".format(*(124, 252, 0)))  # lawn green
 
-        source.append(lable.index("Dewater"))
-        target.append(lable.index("Add Water"))
+        source.append(label.index("Dewater"))
+        target.append(label.index("Add Water"))
         rec_water = (
             sum(self.liq_rem * composition) - sum(self.liq_treatment_vol * composition) * 1000
         )
         value.append(rec_water)
-        lable_link.append("liq_rem")
+        label_link.append("liq_rem")
         color_link.append("rgba({}, {}, {}, 0.8)".format(*(0, 0, 128)))  # navy
 
         self.Dig_to_Curing.update(composition)
-        source.append(lable.index("Mixer"))
-        target.append(lable.index("Curing"))
+        source.append(label.index("Mixer"))
+        target.append(label.index("Curing"))
         value.append(self.Dig_to_Curing.flow)
-        lable_link.append("Dig_to_Curing")
+        label_link.append("Dig_to_Curing")
         color_link.append("rgba({}, {}, {}, 0.8)".format(*(60, 179, 113)))  # medium sea green
 
         self.compost_to_ps.update(composition)
-        source.append(lable.index("Curing"))
-        target.append(lable.index("Post Screen"))
+        source.append(label.index("Curing"))
+        target.append(label.index("Post Screen"))
         value.append(self.compost_to_ps.flow)
-        lable_link.append("compost_to_ps")
+        label_link.append("compost_to_ps")
         color_link.append("rgba({}, {}, {}, 0.8)".format(*(0, 100, 0)))  # dark green
 
-        source.append(lable.index("Curing"))
-        target.append(lable.index("Post Screen"))
+        source.append(label.index("Curing"))
+        target.append(label.index("Post Screen"))
         value.append(sum(self.WC_SC * composition))
-        lable_link.append("WC_SC")
+        label_link.append("WC_SC")
         color_link.append("rgba({}, {}, {}, 0.8)".format(*(160, 82, 45)))  # sienna
 
-        source.append(lable.index("Wood Chips"))
-        target.append(lable.index("Curing"))
+        source.append(label.index("Wood Chips"))
+        target.append(label.index("Curing"))
         value.append(sum(self.WC_SC * composition) - sum(self.Screen_rejects * composition))
-        lable_link.append("Wood Chips")
+        label_link.append("Wood Chips")
         color_link.append("rgba({}, {}, {}, 0.8)".format(*(160, 82, 45)))  # sienna
 
-        source.append(lable.index("Post Screen"))
-        target.append(lable.index("Curing"))
+        source.append(label.index("Post Screen"))
+        target.append(label.index("Curing"))
         value.append(sum(self.Screen_rejects * composition))
-        lable_link.append("Screen_rejects")
+        label_link.append("Screen_rejects")
         color_link.append("rgba({}, {}, {}, 0.8)".format(*(160, 82, 45)))  # sienna
 
         self.FinalCompost.update(composition)
-        source.append(lable.index("Post Screen"))
-        target.append(lable.index("Finished Compost"))
+        source.append(label.index("Post Screen"))
+        target.append(label.index("Finished Compost"))
         value.append(self.FinalCompost.flow)
-        lable_link.append("FinalCompost")
+        label_link.append("FinalCompost")
         color_link.append("rgba({}, {}, {}, 0.8)".format(*(0, 128, 0)))  # green
 
-        source.append(lable.index("Makeup Water"))
-        target.append(lable.index("Add Water"))
+        source.append(label.index("Makeup Water"))
+        target.append(label.index("Add Water"))
         value.append(sum(self.water_flow * composition) - rec_water)
-        lable_link.append("Makeup_water")
+        label_link.append("Makeup_water")
         color_link.append("rgba({}, {}, {}, 0.8)".format(*(0, 0, 255)))  # blue
 
-        source.append(lable.index("Dewater"))
-        target.append(lable.index("WWT"))
+        source.append(label.index("Dewater"))
+        target.append(label.index("WWT"))
         value.append(sum(self.liq_treatment_vol * composition) * 1000)
-        lable_link.append("liq_treatment_vol")
+        label_link.append("liq_treatment_vol")
         color_link.append("rgba({}, {}, {}, 0.8)".format(*(0, 0, 139)))  # dark blue
 
         fig = go.Figure(
@@ -579,13 +579,13 @@ class AD(ProcessModel):
                         "pad": 20,
                         "thickness": 20,
                         "line": {"color": "black", "width": 0.5},
-                        "label": lable,
+                        "label": label,
                     },
                     link={
                         "source": source,
                         "target": target,
                         "value": value,
-                        "label": lable_link,
+                        "label": label_link,
                         "color": color_link,
                     },
                 )

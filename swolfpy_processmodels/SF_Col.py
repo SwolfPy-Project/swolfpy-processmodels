@@ -46,7 +46,7 @@ class SF_Col(ProcessModel):
     @staticmethod
     def scheme():
         """
-        Retrun the dictionary for collection_scheme.
+        Return the dictionary for collection_scheme.
 
         all the contributions are zero; user should define them according to his/her case.
         """
@@ -1123,7 +1123,7 @@ class SF_Col(ProcessModel):
         ).replace([np.inf, np.nan], 0)
 
         # OUTPUT
-        # Energy use is calculated for ORG and it is same with Dryres
+        # Energy use is calculated for ORG and it is same with Dryers
         self.col.loc["DryRes", "FuelMg"] = self.col["FuelMg"]["ORG"]
         self.col.loc["DryRes", "FuelMg_CNG"] = self.col["FuelMg_CNG"]["ORG"]
         self.col.loc["DryRes", "ElecMg"] = self.col["ElecMg"]["ORG"]
