@@ -803,9 +803,7 @@ def Baler_2Way(Input, InputData, LCI):
         * (Eqpt["Bale_Height"]["amount"] + Eqpt["Bale_Width"]["amount"])
     )
     # Wire use
-    Wire_use = (
-        (Input / Density) / Volume * Wire_len / InputData.Baler_Wire["Len_to_Mass"]["amount"]
-    )
+    Wire_use = (Input / Density) / Volume * Wire_len / InputData.Baler_Wire["Len_to_Mass"]["amount"]
 
     # Add Wire use to LCI
     LCI.add(("Technosphere", "Wire"), Wire_use)

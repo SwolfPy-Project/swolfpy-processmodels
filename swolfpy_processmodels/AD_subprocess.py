@@ -150,7 +150,9 @@ def Reactor(input_flow, CommonData, process_data, input_data, Material_Propertie
 
     lci.add(
         name="Fugitive (Leaked) Methane",
-        flow=(CH4_fugitive_mass_asC * CommonData.MW["CH4"]["amount"] / CommonData.MW["C"]["amount"]),
+        flow=(
+            CH4_fugitive_mass_asC * CommonData.MW["CH4"]["amount"] / CommonData.MW["C"]["amount"]
+        ),
     )
 
     lci.add(
