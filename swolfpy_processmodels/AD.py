@@ -575,16 +575,19 @@ class AD(ProcessModel):
                     orientation="h",
                     valueformat=".0f",
                     valuesuffix="kg",
-                    node=dict(
-                        pad=20, thickness=20, line=dict(color="black", width=0.5), label=lable
-                    ),
-                    link=dict(
-                        source=source,
-                        target=target,
-                        value=value,
-                        label=lable_link,
-                        color=color_link,
-                    ),
+                    node={
+                        "pad": 20,
+                        "thickness": 20,
+                        "line": {"color": "black", "width": 0.5},
+                        "label": lable,
+                    },
+                    link={
+                        "source": source,
+                        "target": target,
+                        "value": value,
+                        "label": lable_link,
+                        "color": color_link,
+                    },
                 )
             ]
         )
@@ -592,7 +595,7 @@ class AD(ProcessModel):
         fig.update_layout(
             title_text="Mass flow diagram for AD process",
             font_size=14,
-            hoverlabel=dict(font_size=14),
+            hoverlabel={"font_size": 14},
         )
         if not saveHTML:
             fig.show()

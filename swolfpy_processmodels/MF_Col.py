@@ -34,7 +34,7 @@ class MF_Col(ProcessModel):
             if Distance:
                 self.Distance = Distance
             else:
-                raise Exception(
+                raise ValueError(
                     "User should define both Distance and Treatment_processes together!"
                 )
         else:
@@ -235,7 +235,7 @@ class MF_Col(ProcessModel):
             elif k[0] == "REC_WetRes":
                 self._col_schm["REC_WetRes"]["Contribution"] += v
             else:
-                raise Exception(f'Error in collection scheme keys: "{k[0]}" is not defined!')
+                raise ValueError(f'Error in collection scheme keys: "{k[0]}" is not defined!')
 
         for k, v in self.col_schm.items():
             if v > 0:
@@ -338,14 +338,12 @@ class MF_Col(ProcessModel):
 
         # Check for negative mass flows
         if (self.col_massflow.values < 0).any().any():
-            raise Exception(f"Negative mass flows in collection model [{self.process_name}]!")
-            # warnings.warn('Negative mass flows in collection model [{self.process_name}]!')
+            raise ValueError(f"Negative mass flows in collection model [{self.process_name}]!")
 
         # Check generated mass = Collected mass
         ratio = self.col_massflow.sum().sum() / total_waste_gen
         if ratio > 1.01 or ratio < 0.99:
-            raise Exception(f"Mass balance error in collection model [{self.process_name}]!")
-            # warnings.warn(f'Mass balance error in collection model [{self.process_name}]!')
+            raise ValueError(f"Mass balance error in collection model [{self.process_name}]!")
 
         # Volume Composition of each collection process for each sector
         mass_to_cyd = (
@@ -529,8 +527,8 @@ class MF_Col(ProcessModel):
 
         # Check that the inputs are realistic
         if any(self.col["RD"].values < 0):
-            raise Exception(
-                "Travelling time is too long that the truck cannot make a loop trip in one day!"
+            raise ValueError(
+                "Traveling time is too long that the truck cannot make a loop trip in one day!"
             )
 
         # Daily weight of refuse collected per vehicle (Mg/vehicle-day)

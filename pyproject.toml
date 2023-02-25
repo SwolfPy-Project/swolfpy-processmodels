@@ -316,5 +316,4 @@ disable = [
   "too-many-statements",
   "too-many-locals",
   "too-many-lines",
-
 ]

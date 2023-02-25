@@ -449,21 +449,21 @@ class GC(ProcessModel):
         """
         CO_mole = (4 * C_mole - 8 * CH4_mole - 2 * O_mole + H_mole) / (2 + 2 * ratio)
         if CO_mole > C_mole:
-            raise Exception("More CO is produced than the incoming C!")
+            raise ValueError("More CO is produced than the incoming C!")
 
         CO2_mole = C_mole - CO_mole - CH4_mole
         if CO2_mole < 0:
-            raise Exception("Error in C balance: The CO and CH4 are more than incoming C!")
+            raise ValueError("Error in C balance: The CO and CH4 are more than incoming C!")
 
         H2_mole = CO_mole * ratio
         if H2_mole * 2 + CH4_mole * 4 > H_mole:
-            raise Exception("Error in H balance")
+            raise ValueError("Error in H balance")
 
         N2_mole = N_mol / 2
 
         H2O_mole = (H_mole - 4 * CH4_mole - 2 * H2_mole + 2 * moist_mole) / 2
         if H2O_mole < 0:
-            raise Exception("Error in water balance or H balance!")
+            raise ValueError("Error in water balance or H balance!")
         return CO_mole, CO2_mole, H2_mole, N2_mole, H2O_mole
 
     def _stack_vol_flow(self):

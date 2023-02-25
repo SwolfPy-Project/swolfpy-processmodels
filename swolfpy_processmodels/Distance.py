@@ -57,7 +57,7 @@ class Distance:
                             and self.data[mode][j][i] != ""
                             and self.data[mode][j][i] != self.data[mode][i][j]
                         ):
-                            raise Exception(
+                            raise ValueError(
                                 f"Distance from {i} to {j} is not equal to distance from {j} to {i} in transport mode of {mode}"
                             )
 
