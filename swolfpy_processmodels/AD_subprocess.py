@@ -1,16 +1,11 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Nov 22 21:23:49 2019.
-
-@author: msardar2
-"""
 from copy import deepcopy
 
 import numpy as np
 
 
 ### AD_Screen
-def screen(input_flow, sep_eff, Material_Properties, LCI, flow_init):
+def screen(input_flow, sep_eff, flow_init):
     product = deepcopy(flow_init)
     residual = deepcopy(flow_init)
 
@@ -230,10 +225,8 @@ def Dewater(
     input_flow,
     input_to_reactor,
     CommonData,
-    process_data,
     input_data,
     Material_Properties,
-    added_water,
     assumed_comp,
     lci,
     flow_init,
@@ -615,7 +608,6 @@ def curing(
     process_data,
     input_data,
     assumed_comp,
-    Material_Properties,
     lci,
     flow_init,
 ):
@@ -735,9 +727,7 @@ def curing(
 
 
 ### AD Post_screen
-def Post_screen(
-    input_flow, input_WC_SR, input_data, assumed_comp, Material_Properties, lci, flow_init
-):
+def Post_screen(input_flow, input_WC_SR, input_data, lci, flow_init):
     product = deepcopy(flow_init)
 
     Screen_rejects = input_WC_SR * input_data.Post_Screen["ad_scrEff_WC"]["amount"]

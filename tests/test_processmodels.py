@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat May  9 17:43:11 2020.
-
-@author: Mojtaba Sardarmehni
-
 Tests for `swolfpy_processmodels` package
 """
 import numpy as np
@@ -46,7 +42,7 @@ def LCA_model_helper(model):
             for y in report["Biosphere"][x]:
                 assert not np.isnan(report["Biosphere"][x][y])
 
-    elif model.Process_Type == "Treatment" or model.Process_Type == "Collection":
+    elif model.Process_Type in ["Treatment", "Collection"]:
         assert Index.issubset(report["Waste"])
         assert len(Index) == len(report["Waste"])
         for x in Index:

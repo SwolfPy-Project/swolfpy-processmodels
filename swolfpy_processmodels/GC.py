@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Sep  2 12:42:12 2021.
-
-@author: msardar2
-"""
 import numpy_financial as npf
 import pandas as pd
 from swolfpy_inputdata import GC_Input
@@ -12,8 +7,6 @@ from .ProcessModel import ProcessModel
 
 
 class GC(ProcessModel):
-    """ """
-
     Process_Type = "RDF"
 
     def __init__(
@@ -449,6 +442,7 @@ class GC(ProcessModel):
         CH4 = 0 if CH4 <= 0 else CH4
         return ratio, CH4
 
+    @staticmethod
     def _gasifier_products(C_mole, H_mole, O_mole, N_mol, CH4_mole, ratio, moist_mole):
         """
         Calculates the syngas.
@@ -515,7 +509,7 @@ class GC(ProcessModel):
         """
         Calculate the flows to environment (emissions)
         """
-        bio_flows = dict()
+        bio_flows = {}
 
         # CO2 emissions from combustion and gasification
         bio_flows["CO2"] = (

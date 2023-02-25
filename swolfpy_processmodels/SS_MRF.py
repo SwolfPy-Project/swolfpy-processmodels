@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Jan  7 11:10:12 2020.
-
-@author: msardar2
-"""
 import numpy as np
 import numpy_financial as npf
 from swolfpy_inputdata import SS_MRF_Input
@@ -223,7 +218,7 @@ class SS_MRF(ProcessModel):
         self.LCI_Waste.add("Other_Residual", self._MS4_HDPE_rmvd)
 
         ### HDPE sold by type
-        self._HDPE_P, self._HDPE_T = HDPE_type(self._MS4_HDPE_rmnd, self.InputData)
+        self._HDPE_P, self._HDPE_T = HDPE_type(self._MS4_HDPE_rmnd)
         self.LCI_Waste.add("HDPE_P", self._HDPE_P)
         self.LCI_Waste.add("HDPE_T", self._HDPE_T)
 

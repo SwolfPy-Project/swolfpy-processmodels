@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Jan  7 11:12:21 2020.
-
-@author: msardar2
-"""
 import numpy as np
 import numpy_financial as npf
 
@@ -636,7 +631,7 @@ def MS4_HDPE(Input, sep_eff, InputData, LCI):
 
 
 ### HDPE sold by type?
-def HDPE_type(Input, InputData):
+def HDPE_type(Input):
     # Mass Calculation
     HDPE_P = np.zeros(Input.shape[0])
     HDPE_T = np.zeros(Input.shape[0])

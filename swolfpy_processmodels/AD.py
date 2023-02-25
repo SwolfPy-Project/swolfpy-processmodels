@@ -49,8 +49,6 @@ class AD(ProcessModel):
         self.S1_unders, self.S1_overs = screen(
             self.Input,
             self.process_data["Pre Screen 1"].values / 100,
-            self.Material_Properties,
-            self.LCI,
             self.flow_init,
         )
 
@@ -58,8 +56,6 @@ class AD(ProcessModel):
         self.S2_to_curing, self.S2_residuls = screen(
             self.S1_overs,
             self.process_data["Pre Screen 2"].values / 100,
-            self.Material_Properties,
-            self.LCI,
             self.flow_init,
         )
 
@@ -115,10 +111,8 @@ class AD(ProcessModel):
             self.digestate,
             self.to_reactor,
             self.CommonData,
-            self.process_data,
             self.InputData,
             self.Material_Properties,
-            self.water_flow,
             self.Assumed_Comp.values,
             self.LCI,
             self.flow_init,
@@ -137,7 +131,6 @@ class AD(ProcessModel):
             self.process_data,
             self.InputData,
             self.Assumed_Comp,
-            self.Material_Properties,
             self.LCI,
             self.flow_init,
         )
@@ -147,8 +140,6 @@ class AD(ProcessModel):
             self.compost_to_ps,
             self.WC_SC,
             self.InputData,
-            self.Assumed_Comp.values,
-            self.Material_Properties,
             self.LCI,
             self.flow_init,
         )

@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Aug 13 11:07:56 2019.
-
-@author: msardar2
-"""
 from copy import deepcopy
 
 import numpy as np
@@ -721,7 +716,7 @@ class LF(ProcessModel):
         for i, j in enumerate(self.lcht_Qlty["Allocation_base"].values):
             if j == "Solid Content":
                 self.lcht_Alloc[:, i] = sld_alloc
-            elif j == "Nitrogen Content" or j == "Phosphorus Content":
+            elif j in ["Nitrogen Content", "Phosphorus Content"]:
                 m = (
                     self.Material_Properties[j].values
                     * sld_cont

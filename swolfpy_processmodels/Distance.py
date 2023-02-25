@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Jan  6 14:50:00 2020.
-
-@author: msardar2
-"""
 import numpy as np
 import pandas as pd
 
@@ -76,7 +71,7 @@ class Distance:
             Example: ``['Heavy Duty Truck', 'Medium Duty Truck']``
         :param default_dist: Default distance that is used to fill the `DataFrame`.
         """
-        dist_dict = dict()
+        dist_dict = {}
         dist_array = np.full((len(process_names), len(process_names)), np.nan, dtype="float")
         dist_array[np.triu_indices_from(dist_array, k=1)] = default_dist
         for mode in transport_modes:
