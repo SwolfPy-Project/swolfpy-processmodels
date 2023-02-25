@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Nov 22 15:06:06 2019.
-
-@author: msardar2
-"""
 from copy import deepcopy
 
 

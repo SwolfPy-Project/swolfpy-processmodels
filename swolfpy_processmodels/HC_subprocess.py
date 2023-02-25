@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Jun 14 15:07:13 2021.
-
-@author: m.sardar
-"""
 from .Common_subprocess import Flow
 
 

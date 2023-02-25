@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Jan  6 12:48:05 2022.
-
-@author: msardar2
-"""
 import numpy as np
 import numpy_financial as npf
 from swolfpy_inputdata import AnF_Input

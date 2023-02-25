@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Jan  7 11:12:21 2020.
-
-@author: msardar2
-"""
 from copy import deepcopy
 
 import numpy as np

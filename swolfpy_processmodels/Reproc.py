@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Mar  9 21:46:21 2020.
-
-@author: msardar2
-"""
 from swolfpy_inputdata import Reproc_Input
 
 from .ProcessModel import ProcessModel

@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Apr 21 21:31:49 2020.
-
-@author: msmsa
-"""
 from abc import ABC, abstractmethod
 
 from swolfpy_inputdata import CommonData

@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Jun 13 15:10:31 2019.
-
-@author: msmsa
-"""
 import numpy_financial as npf
 import pandas as pd
 from swolfpy_inputdata import WTE_Input

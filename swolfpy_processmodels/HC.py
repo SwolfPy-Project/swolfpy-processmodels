@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Jun 10 12:25:21 2021.
-
-@author: m.sardar
-"""
 import numpy_financial as npf
 from swolfpy_inputdata import HC_Input
 

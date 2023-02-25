@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Jul  1 21:59:44 2019.
-
-@author: msardar2
-"""
 import numpy_financial as npf
 from swolfpy_inputdata import Comp_Input
 

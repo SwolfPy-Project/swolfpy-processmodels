@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-@author: msardar2
-"""
 import warnings
 
 import numpy as np

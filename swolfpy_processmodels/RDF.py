@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Sep 20 14:39:08 2021.
-
-@author: msardar2
-"""
 import numpy as np
 import numpy_financial as npf
 from swolfpy_inputdata import RDF_Input

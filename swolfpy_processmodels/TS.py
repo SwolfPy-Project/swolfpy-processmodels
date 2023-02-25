@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Apr 29 11:51:31 2021.
-
-@author: msardar2
-"""
 import numpy as np
 import numpy_financial as npf
 from swolfpy_inputdata import TS_Input

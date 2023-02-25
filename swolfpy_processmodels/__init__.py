@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-@author: Mojtaba Sardarmehni
-
 Life_cycle process models for the swolfpy
 """
 from .AD import AD
