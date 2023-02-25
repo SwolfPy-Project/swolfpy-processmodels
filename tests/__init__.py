@@ -1,4 +1,4 @@
 # -*- coding: utf-8 -*-
 """
-Tests for `swolfpy_processmodels` package
+Tests for `swolfpy_processmodels` package.
 """

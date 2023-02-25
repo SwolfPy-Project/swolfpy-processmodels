@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Tests for `swolfpy_processmodels` package
+Tests for `swolfpy_processmodels` package.
 """
 import numpy as np
 from swolfpy_inputdata import CommonData

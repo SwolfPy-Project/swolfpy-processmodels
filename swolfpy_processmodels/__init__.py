@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Life_cycle process models for the swolfpy
+Life_cycle process models for the swolfpy.
 """
 from .AD import AD
 from .AnF import AnF
