@@ -31,7 +31,6 @@ jobs:
         python -m pip install --upgrade pip
 
     - name: Check if feature branch exists in swolfpy-inputdata
-      id: branch-check
       run: |
         echo "-----------------------------------------"
         echo "github.head_ref = ${{ github.head_ref }} ---"
