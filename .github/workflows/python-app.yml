@@ -43,7 +43,7 @@ jobs:
 
     - name: Install swolfpy-inputdata from branch
       run: |
-        pip install https://github.com/SwolfPy-Project/swolfpy-inputdata/archive/refs/heads/${{ steps.branch-check.outputs.branch }}.zip
+        pip install git+https://github.com/SwolfPy-Project/swolfpy-inputdata.git@${{ steps.branch-check.outputs.branch }}
 
     - name: Install rest of dependencies
       run: |
