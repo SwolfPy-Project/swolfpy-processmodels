@@ -33,6 +33,18 @@ jobs:
     - name: Check if feature branch exists in swolfpy-inputdata
       id: branch-check
       run: |
+        echo "--------------"
+
+        echo "github.head_ref = ${{ github.head_ref }} ---"
+        echo "github.ref = ${{ github.ref }} ---"
+        echo "github.ref_name = ${{ github.ref_name }} ---"
+        echo "github.repository = ${{ github.repository }} ---"
+
+        echo "==============="
+        echo 'toJSON(github)  ${{ toJSON(github) }}'
+
+        echo "--------------"
+
         if git ls-remote --exit-code --heads https://github.com/SwolfPy-Project/swolfpy-inputdata.git ${{ github.head_ref }}; then
           echo "Branch ${{ github.head_ref }} exists."
           echo "BRANCH=${{ github.head_ref }}" >> $GITHUB_ENV
