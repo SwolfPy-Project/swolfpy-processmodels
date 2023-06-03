@@ -35,16 +35,16 @@ jobs:
       run: |
         if git ls-remote --exit-code --heads https://github.com/SwolfPy-Project/swolfpy-inputdata.git ${{ github.head_ref }}; then
           echo "Branch exists."
-          echo "::set-output name=branch::${{ github.head_ref }}"
+          echo "BRANCH=${{ github.head_ref }}" >> $GITHUB_ENV
         else
           echo "Branch does not exist. Falling back to 'master' branch."
-          echo "::set-output name=branch::master"
+          echo "BRANCH=master" >> $GITHUB_ENV
         fi
 
     - name: Install swolfpy-inputdata from branch
       run: |
-        echo ${{ steps.branch-check.outputs.branch }}
-        pip install git+https://github.com/SwolfPy-Project/swolfpy-inputdata.git@${{ steps.branch-check.outputs.branch }}
+        echo ${{ env.BRANCH }}
+        pip install git+https://github.com/SwolfPy-Project/swolfpy-inputdata.git@${{ env.BRANCH }}
 
     - name: Install rest of dependencies
       run: |
