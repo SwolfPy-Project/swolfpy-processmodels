@@ -45,9 +45,9 @@ jobs:
 
         echo "--------------"
 
-        if git ls-remote --exit-code --heads https://github.com/SwolfPy-Project/swolfpy-inputdata.git ${{ github.head_ref }}; then
-          echo "Branch ${{ github.head_ref }} exists."
-          echo "BRANCH=${{ github.head_ref }}" >> $GITHUB_ENV
+        if git ls-remote --exit-code --heads https://github.com/SwolfPy-Project/swolfpy-inputdata.git ${{ github.ref_name }}; then
+          echo "Branch ${{ github.ref_name }} exists."
+          echo "BRANCH=${{ github.ref_name }}" >> $GITHUB_ENV
         else
           echo "Branch does not exist. Falling back to 'master' branch."
           echo "BRANCH=master" >> $GITHUB_ENV
