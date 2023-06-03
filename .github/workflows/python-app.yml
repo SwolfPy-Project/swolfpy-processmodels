@@ -39,8 +39,7 @@ jobs:
         echo "github.ref_name = ${{ github.ref_name }} ---"
         echo "------------------------------------------"
 
-        if (git ls-remote --exit-code --heads https://github.com/SwolfPy-Project/swolfpy-inputdata.git ${{ github.ref_name }})
-        then
+        if [[ git ls-remote --exit-code --heads https://github.com/SwolfPy-Project/swolfpy-inputdata.git ${{ github.ref_name }} ]]; then
           echo "Branch ${{ github.ref_name }} exists."
           echo "BRANCH=${{ github.ref_name }}" >> $GITHUB_ENV
         else
