@@ -34,7 +34,7 @@ jobs:
       id: branch-check
       run: |
         if git ls-remote --exit-code --heads https://github.com/SwolfPy-Project/swolfpy-inputdata.git ${{ github.head_ref }}; then
-          echo "Branch exists."
+          echo "Branch ${{ github.head_ref }} exists."
           echo "BRANCH=${{ github.head_ref }}" >> $GITHUB_ENV
         else
           echo "Branch does not exist. Falling back to 'master' branch."
@@ -43,7 +43,9 @@ jobs:
 
     - name: Install swolfpy-inputdata from branch
       run: |
-        echo ${{ env.BRANCH }}
+        echo "Test"
+        echo "${{ env.BRANCH }}"
+        echo "------------"
         pip install git+https://github.com/SwolfPy-Project/swolfpy-inputdata.git@${{ env.BRANCH }}
 
     - name: Install rest of dependencies
