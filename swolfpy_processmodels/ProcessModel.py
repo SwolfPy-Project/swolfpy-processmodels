@@ -1,10 +1,6 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Apr 21 21:31:49 2020
-
-@author: msmsa
-"""
 from abc import ABC, abstractmethod
+
 from swolfpy_inputdata import CommonData
 
 
@@ -18,7 +14,6 @@ class ProcessModel(ABC):
 
         # Read Material properties
         self.Material_Properties = self.CommonData.Material_Properties
-
 
         self.Index = self.CommonData.Index
 

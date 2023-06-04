@@ -2,8 +2,16 @@
 History
 =======
 
+1.0.0 (2023-06-03)
+------------------
+
+* Upgrade to Python 3.10
+* Add PreCommit
+
+
 0.1.9 (2022-04-06)
 ------------------
+
 * Add Multi-family and commercial Waste collection
 * Add Animal feed production
 * Refactor SF-collection model
